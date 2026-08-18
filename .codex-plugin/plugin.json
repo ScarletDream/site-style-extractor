@@ -5,7 +5,7 @@
   "author": {
     "name": "Dorim"
   },
-  "license": "Apache-2.0",
+  "license": "MIT",
   "keywords": ["ui", "design", "website", "playwright", "evidence"],
   "skills": "./skills/",
   "interface": {

@@ -1,50 +1,36 @@
 # License decision record
 
-Status: **confirmed by the maintainer on 2026-08-18**.
+Status: **MIT confirmed by the maintainer on 2026-08-18**.
 
-The repository currently uses Apache License 2.0 because the intended beta favors
-broad adoption by individuals, companies, and other Agent ecosystems while keeping
-copyright notices and adding an express patent grant.
+The project uses the MIT License to minimize adoption friction for individual
+developers, companies, and Agent ecosystems. The intended audience should be able
+to understand the grant quickly: private use, modification, redistribution,
+sublicensing, and commercial use are allowed.
 
-## What this choice permits
+## What downstream users must do
 
-- Private and commercial use.
-- Modification and redistribution, including inside closed-source products.
-- Charging money for products or services that use the project.
-- Forking the project without contributing changes upstream.
+- Preserve the MIT copyright and permission notice in copies or substantial
+  portions of the software.
+- Accept that the software is provided without warranty or liability protection
+  from its authors.
 
-## What downstream distributors must do
+## What this choice does not do
 
-- Include the Apache-2.0 license and relevant copyright/attribution notices.
-- State significant changes to modified files.
-- Preserve a `NOTICE` file if a distributed version contains one.
-- Avoid implying that project or contributor trademarks endorse their product.
-
-## What it does not protect
-
-- It does not require forks, hosted services, or commercial derivatives to publish
-  their source code.
+- It does not require forks or commercial derivatives to publish their source.
+- Unlike Apache-2.0, it does not contain an equally explicit contributor patent
+  grant or patent-litigation termination clause.
 - It does not license third-party websites, screenshots, fonts, brands, or assets
-  captured by users.
+  observed by user-run captures.
 - It does not transfer ownership of the project name or logo.
-- It is not a warranty, support promise, or guarantee of legal compliance by users.
 
-## Why not the closest alternatives
+## Why MIT instead of the closest alternatives
 
-- MIT is simpler and similarly permissive, but has no equally explicit contributor
-  patent grant.
-- MPL-2.0 would require publication of modifications to MPL-covered files while
-  allowing larger proprietary products; choose it if reciprocal engine fixes matter
-  more than frictionless adoption.
-- GPL-3.0 would require distributed combined derivatives to remain GPL; choose it
-  only if strong code-sharing reciprocity is a product goal.
-- AGPL-3.0 extends that reciprocity to modified network services and is the strongest
-  deterrent to closed hosted forks, but creates the most adoption and legal-review
-  friction.
+- Apache-2.0 is similarly permissive and provides more explicit patent terms, but
+  MIT is shorter and more familiar in the Skill ecosystem targeted by this beta.
+- MPL-2.0 would add file-level source reciprocity.
+- GPL-3.0 and AGPL-3.0 would add substantially stronger redistribution or network
+  reciprocity and more adoption friction.
 
-The maintainer chose broad adoption under Apache-2.0. A public license grant for an
-already released version should be treated as irreversible for recipients of that
-version.
-
-This record explains project intent; the actual `LICENSE` text controls and this is
-not legal advice.
+The public MIT grant for a released version should be treated as irreversible for
+recipients of that version. This record explains project intent; the actual
+`LICENSE` text controls and this is not legal advice.

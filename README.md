@@ -1,20 +1,26 @@
 # Site Style Extractor
 
-Give an Agent one public website URL and get an evidence-backed, portable UI design-language package rather than a pile of generic adjectives.
+**简体中文** | [English](README_EN.md)
 
-The project combines three boundaries:
+只给 Agent 一个公开网站 URL，得到一套有截图、有代码线索、有置信度标注、可以迁移的 UI 风格档案，而不是一堆“简洁、现代、高级”的空泛形容词。
 
-1. A deterministic Playwright collector scans one desktop and narrow path, saves immutable candidate frames, rendered measurements, public resources, and honest failures.
-2. An Agent selects representative evidence and synthesizes transferable visual rules and trade-offs.
-3. Deterministic finalization and validation verify hashes, statuses, references, and the five-artifact contract.
+这个项目只负责提取风格，不替用户设计产品，也不复制来源网站的品牌资产和标志性构图。
 
-It extracts style. It does not implement the user's product or copy the source site's brand assets and distinctive composition.
+## 它是怎么工作的
 
-## Requirements
+项目由三层组成：
 
-- Node.js 20 or newer.
-- npm.
-- The Chromium revision paired with Playwright 1.62.1.
+1. 确定性的 Playwright 采集器沿桌面和窄屏的单一代表主线扫描页面，保存不可变候选截图、渲染测量、公开资源和真实失败状态。
+2. Agent 从候选证据中选择代表画面，提炼可迁移的视觉规则、设计决策和取舍。
+3. 确定性的收束与验证程序检查截图哈希、状态传播、证据引用和五件交付物是否一致。
+
+机械脚本负责“看见了什么、证据有没有被改过”；Agent 负责“这些证据意味着什么”。
+
+## 环境要求
+
+- Node.js 20 或更新版本
+- npm
+- 与 Playwright 1.62.1 配套的 Chromium
 
 ```bash
 npm install
@@ -22,7 +28,7 @@ node node_modules/playwright/cli.js install chromium
 node bin/site-style.cjs doctor --json
 ```
 
-On machines with multiple Node versions, invoke the supported Node executable explicitly. `doctor` reports the selected Node, Playwright, Chromium, OS, architecture, headless mode, and output writeability.
+如果机器上有多个 Node 版本，请明确使用受支持的 Node 可执行文件。`doctor` 会报告实际使用的 Node、Playwright、Chromium、操作系统、CPU 架构、无头模式和输出目录写入能力。
 
 ## CLI
 
@@ -35,50 +41,52 @@ site-style render --profile output/example-style/style-profile.yaml --analysis o
 site-style validate delivery output/example-style
 ```
 
-Every command supports `--json`. Machine results go to stdout and diagnostics go to stderr.
+所有命令都支持 `--json`。机器结果写到 stdout，诊断信息写到 stderr。
 
-| Exit | Meaning |
+| 退出码 | 含义 |
 |---:|---|
-| 0 | Complete success |
-| 1 | Execution or validation failure |
-| 2 | Invalid command usage |
-| 3 | A valid `partial` or `blocked` artifact was honestly produced or validated |
+| 0 | 完整成功 |
+| 1 | 执行或校验失败 |
+| 2 | 命令用法错误 |
+| 3 | 成功生成或验证了诚实的 `partial` / `blocked` 产物 |
 
-`interact` is explicit because it reopens a website. `finalize` never hides an online click inside an apparently offline command.
+`interact` 被设计为显式命令，因为它会重新访问网站；`finalize` 不会把在线点击偷偷藏进一个看起来离线的操作里。
 
-## Output
+## 五件交付物
 
-A complete delivery contains:
+一次完整交付包含：
 
-- `screenshots/`
-- `evidence.json`
-- `public-code-map.json`
-- `style-profile.yaml`
-- `analysis.md`
+- `screenshots/`：最终选中的代表截图
+- `evidence.json`：页面、渲染、资源、状态和采集过程证据
+- `public-code-map.json`：可见效果与公开 CSS/资源机制的映射线索
+- `style-profile.yaml`：供其他 Agent 使用的结构化风格档案
+- `analysis.md`：面向人的设计语言分析
 
-Internal candidates, probes, and contact sheets remain audit material. The final package contains at most six selected screenshots.
+内部候选帧、探针和 contact sheet 只作为审计材料。最终风格包最多包含六张选中截图，默认不会在聊天里向用户倾倒整套截图。
 
-## What `partial` and `blocked` mean
+## `partial` 和 `blocked` 是什么
 
-`partial` is a usable but incomplete result, such as one viewport succeeding while another remains behind a loader. `blocked` means the requested evidence could not be safely obtained. They are valid recorded outcomes, not successful style extraction, and return exit code 3.
+`partial` 表示结果可用但不完整，例如桌面视口成功、窄屏仍卡在加载器后面。`blocked` 表示无法在安全边界内取得所需证据。它们是有效的失败记录，不会被冒充成“成功提取风格”，CLI 返回退出码 3。
 
-The collector never treats a loader, browser error page, blank canvas, or low-information transition as proof of the intended design. DOM/CSS clues from a failed visual capture remain explicitly inferred.
+采集器不会把加载器、浏览器错误页、空白画布或低信息过渡帧当成目标设计的证据。来自失败画面的 DOM/CSS 线索也会明确标成推断，而不是已观察事实。
 
-Traversal, DOM/CSS sampling, settling, screenshots, diagnostics, and interaction targets are individually bounded. The beta does not yet enforce a hard operating-system wall-clock, memory, or network-byte ceiling for the entire browser process. For untrusted public pages, run it in a disposable environment with an external timeout and resource limits; a partial result is preferable to relaxing those limits.
+遍历、DOM/CSS 采样、稳定等待、截图、诊断和交互候选都有上限。当前 Beta 尚未对整个浏览器进程提供操作系统级的总时长、内存和下载字节硬限制；面对不受信任的公开页面，应在一次性环境中配合外部超时和资源限制运行。
 
-## Rendering limits
+## 渲染边界
 
-This tool does not promise pixel-equivalent reproduction. WebGL, Canvas, video, system fonts, codecs, GPU drivers, headless rendering, continuous animation, A/B tests, and geographically delivered content can differ between runs and machines. Docker improves dependency consistency; it does not make these surfaces identical to the user's desktop.
+本工具不承诺像素级复刻。WebGL、Canvas、视频、系统字体、编解码器、GPU 驱动、无头渲染、持续动画、A/B 测试和地区分发内容都可能随机器或运行时间变化。
+
+Docker 能提高依赖一致性，但不能让这些表面与用户桌面完全相同。
 
 ## Codex Plugin
 
-The repository contains a Plugin Skill under `skills/site-style-extractor`. The Skill provides Agent orchestration and analysis rules; the npm CLI provides deterministic execution. Plugin installation does not necessarily install npm or Chromium automatically, so run `site-style doctor` before capture.
+仓库在 `skills/site-style-extractor` 中包含一个 Plugin Skill。Skill 提供 Agent 编排、视觉选择和语义分析规则；npm CLI 提供确定性的机械执行。Plugin 安装不一定会自动安装 npm 依赖和 Chromium，因此采集前必须运行 `site-style doctor`。
 
-The Plugin is the reasoning/orchestration layer, not a second copy of the browser engine. Install the npm package (or use this repository checkout) and its pinned Chromium separately. Until the package is published to a registry, run the CLI as `node bin/site-style.cjs ...` from this checkout.
+它不是第二份浏览器引擎。npm 包尚未发布到 registry 时，请在仓库根目录使用 `node bin/site-style.cjs ...`。
 
 ## Docker
 
-The Docker image exposes the same CLI and pins the matching Playwright image. It is experimental until the repository's Linux Docker build-and-doctor CI has passed on the published commit:
+Docker 镜像暴露同一套 CLI，并固定配套 Playwright 镜像：
 
 ```bash
 docker build -t site-style-extractor:0.1.0-beta.1 .
@@ -87,30 +95,21 @@ docker run --rm --init --memory=2g --cpus=2 -v "$PWD/work:/work" site-style-extr
   scan https://example.com --run /work/example-scan --json
 ```
 
-The container runs as the non-root `pwuser`. Mount only a dedicated output directory; do not mount a personal browser profile, cookie store, or credentials. Docker standardizes the browser dependency but is not a network sandbox and does not guarantee desktop-identical WebGL, Canvas, video, fonts, or animation.
+容器以非 root 用户 `pwuser` 运行。只挂载专用输出目录，不要挂载个人浏览器配置、Cookie、凭据、主目录或 Docker socket。Linux 用户需要提前确保挂载目录可由容器用户写入。
 
-On Linux, make the mounted output directory writable by the container user before capture. Prefer a disposable directory rather than weakening permissions on an existing project tree.
-
-## Development
+## 开发与验证
 
 ```bash
 npm test
 npm pack --dry-run
 ```
 
-Public regression tests use local synthetic fixtures. Real websites are non-blocking smoke tests because CDN failures, rate limits, and live redesigns are external state.
+公开回归测试只使用本地合成网页。真实网站会受 CDN、限流和在线改版影响，因此只作为非阻断 smoke test。
 
-Before contributing or publishing a release, read [CONTRIBUTING.md](CONTRIBUTING.md),
-[SECURITY.md](SECURITY.md), and [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md).
+参与贡献或准备发布前，请阅读 [CONTRIBUTING.md](CONTRIBUTING.md)、[SECURITY.md](SECURITY.md) 和 [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md)。
 
-## License
+## 许可证
 
-Apache-2.0. This license covers this project's code and documentation, not third-party websites, screenshots, fonts, brands, or assets observed by a user-run capture.
+MIT。它允许私人使用、修改、再发布、转授权和商业使用，只要求在软件副本或主要部分中保留版权与许可声明。
 
-In practical terms, Apache-2.0 permits private, commercial, modified, and
-redistributed use. Distributors must preserve the license and relevant notices,
-mark modified files, and may not use contributor trademarks as an endorsement.
-Contributors also provide an express patent grant, with termination for a party
-that starts certain patent litigation over the covered work. See [LICENSE](LICENSE)
-for the controlling text and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for
-direct runtime dependencies.
+MIT 只覆盖本项目的代码和文档，不覆盖用户采集到的第三方网站、截图、字体、品牌或资产。完整条款见 [LICENSE](LICENSE)，直接运行依赖的许可证摘要见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。

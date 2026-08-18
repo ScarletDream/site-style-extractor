@@ -10,6 +10,11 @@ All notable user-visible changes will be documented here. The format follows
 
 - Public-release governance, contribution, security, and issue templates.
 
+### Changed
+
+- Use MIT as the project license and make the complete Chinese README the
+  default GitHub landing page, with a complete English counterpart.
+
 ## [0.1.0-beta.1] - 2026-08-18
 
 ### Added

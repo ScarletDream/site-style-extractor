@@ -7,7 +7,7 @@ COPY bin ./bin
 COPY src ./src
 COPY skills ./skills
 COPY examples ./examples
-COPY README.md SECURITY.md THIRD_PARTY_NOTICES.md LICENSE ./
+COPY README.md README_EN.md SECURITY.md THIRD_PARTY_NOTICES.md LICENSE ./
 
 USER pwuser
 ENTRYPOINT ["node", "/app/bin/site-style.cjs"]

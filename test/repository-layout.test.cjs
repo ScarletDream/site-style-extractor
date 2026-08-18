@@ -8,7 +8,7 @@ const root = path.resolve(__dirname, '..');
 test('repository is a public single-engine package', () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
   assert.notEqual(pkg.private, true);
-  assert.equal(pkg.license, 'Apache-2.0');
+  assert.equal(pkg.license, 'MIT');
   assert.equal(pkg.engines.node, '>=20');
   assert.equal(pkg.dependencies.playwright, '1.62.1');
   assert.equal(pkg.dependencies.yaml, '2.9.0');
@@ -17,6 +17,10 @@ test('repository is a public single-engine package', () => {
   assert.equal(fs.existsSync(path.join(root, 'src', 'capture-site.cjs')), true);
   assert.equal(fs.existsSync(path.join(root, 'skills', 'site-style-extractor', 'scripts')), false);
   assert.equal(pkg.files.includes('node_modules/'), false);
+
+  const license = fs.readFileSync(path.join(root, 'LICENSE'), 'utf8');
+  assert.match(license, /^MIT License/m);
+  assert.match(license, /Copyright \(c\) 2026 ScarletDream/);
 });
 
 test('distribution metadata excludes generated and private evidence', () => {

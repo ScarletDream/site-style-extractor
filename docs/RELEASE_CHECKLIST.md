@@ -31,7 +31,7 @@
 
 - [x] Maintainer explicitly confirms the license after reviewing
   `docs/LICENSE_DECISION.md`; do not infer consent from the provisional file.
-- [ ] Review Apache-2.0 and all direct/transitive dependency licenses.
+- [ ] Review MIT and all direct/transitive dependency licenses.
 - [ ] Tag the exact tested commit as `v0.1.0-beta.1`.
 - [ ] Create release notes from `CHANGELOG.md`.
 - [ ] If publishing npm, verify account, package-name availability, provenance, and

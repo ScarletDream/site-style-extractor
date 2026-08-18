@@ -10,7 +10,7 @@ test('Codex Plugin manifest exposes exactly one Skill directory', () => {
   const manifest = JSON.parse(read('.codex-plugin/plugin.json'));
   assert.equal(manifest.name, 'site-style-extractor');
   assert.match(manifest.version, /^0\.1\.0-beta\.1$/);
-  assert.equal(manifest.license, 'Apache-2.0');
+  assert.equal(manifest.license, 'MIT');
   assert.equal(manifest.skills, './skills/');
   assert.equal(manifest.author.name, 'Dorim');
   assert.equal(manifest.interface.displayName, 'Site Style Extractor');
@@ -32,10 +32,14 @@ test('Skill delegates deterministic work to the unified CLI', () => {
 
 test('public documentation states safety and rendering limits', () => {
   const readme = read('README.md');
+  const readmeEnglish = read('README_EN.md');
   const security = read('SECURITY.md');
   assert.match(readme, /partial.*blocked/is);
-  assert.match(readme, /WebGL.*Canvas.*video.*font/is);
-  assert.match(readme, /does not.*pixel/is);
+  assert.match(readme, /WebGL.*Canvas.*视频.*字体/is);
+  assert.match(readme, /不承诺像素级复刻/is);
+  assert.match(readmeEnglish, /partial.*blocked/is);
+  assert.match(readmeEnglish, /WebGL.*Canvas.*video.*font/is);
+  assert.match(readmeEnglish, /does not.*pixel/is);
   assert.match(security, /SSRF/i);
   assert.match(security, /GET.*side effect/is);
   assert.match(security, /cookies|browser profile/i);
