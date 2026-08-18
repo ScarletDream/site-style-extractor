@@ -8,6 +8,6 @@ Project discussions should focus on reproducible behavior, trade-offs, and the
 smallest useful correction. Maintainers may edit, hide, or remove material that
 violates these rules and may restrict repeated disruptive participation.
 
-Until a private maintainer contact is published, do not include sensitive personal
-information in a conduct report. Public-release readiness requires a real private
-reporting channel.
+For reports containing sensitive personal information, use the repository's
+private vulnerability-reporting form and clearly label the report as a conduct
+matter. Do not place private information in a public issue.

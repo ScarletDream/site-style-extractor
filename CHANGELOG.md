@@ -10,7 +10,7 @@ All notable user-visible changes will be documented here. The format follows
 
 - Public-release governance, contribution, security, and issue templates.
 
-## [0.1.0-beta.1] - Unreleased
+## [0.1.0-beta.1] - 2026-08-18
 
 ### Added
 
@@ -22,4 +22,5 @@ All notable user-visible changes will be documented here. The format follows
 - Skills-only Codex Plugin wrapper, synthetic regression fixture, CI, and an
   experimental pinned Playwright Docker image.
 
-Release comparison links will be added after the public repository URL is fixed.
+[Unreleased]: https://github.com/ScarletDream/site-style-extractor/compare/v0.1.0-beta.1...HEAD
+[0.1.0-beta.1]: https://github.com/ScarletDream/site-style-extractor/releases/tag/v0.1.0-beta.1

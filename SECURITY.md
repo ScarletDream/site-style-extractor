@@ -21,10 +21,10 @@ Docker is an installation boundary, not a security boundary. Do not mount creden
 
 ## Reporting a vulnerability
 
-Do not publish a working exploit in a public issue. Once the public GitHub
-repository enables Private Vulnerability Reporting, use its **Security → Report a
-vulnerability** form. Include the affected version, reproducible input, observed
-impact, and a minimal sanitized artifact.
+Do not publish a working exploit in a public issue. Use this repository's
+**Security → Report a vulnerability** form:
+https://github.com/ScarletDream/site-style-extractor/security/advisories/new
 
-Before that private channel is enabled, this beta is not ready for public release.
-Do not send secrets through a public issue or commit them to a reproduction.
+Include the affected version, reproducible input, observed impact, and a minimal
+sanitized artifact. Do not send secrets through a public issue or commit them to a
+reproduction.

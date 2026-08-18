@@ -4,6 +4,14 @@
   "description": "Evidence-backed UI style extraction from public websites.",
   "license": "Apache-2.0",
   "author": "Dorim",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ScarletDream/site-style-extractor.git"
+  },
+  "homepage": "https://github.com/ScarletDream/site-style-extractor#readme",
+  "bugs": {
+    "url": "https://github.com/ScarletDream/site-style-extractor/issues"
+  },
   "type": "commonjs",
   "engines": {
     "node": ">=20"
@@ -25,7 +33,7 @@
   ],
   "dependencies": {
     "playwright": "1.62.1",
-    "yaml": "2.8.1"
+    "yaml": "2.9.0"
   },
   "scripts": {
     "test": "node --test test/*.test.cjs",

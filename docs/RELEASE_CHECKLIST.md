@@ -2,9 +2,9 @@
 
 ## Repository identity
 
-- [ ] Create the public repository and choose the final owner/name.
-- [ ] Replace `example.invalid` links in `CHANGELOG.md`.
-- [ ] Add `repository`, `homepage`, and `bugs` URLs to `package.json`.
+- [x] Choose the final owner/name and prepare the public repository metadata.
+- [x] Add release links in `CHANGELOG.md`.
+- [x] Add `repository`, `homepage`, and `bugs` URLs to `package.json`.
 - [ ] Enable GitHub Private Vulnerability Reporting and verify `SECURITY.md`.
 
 ## Cold installation
@@ -29,7 +29,7 @@
 
 ## Publication
 
-- [ ] Maintainer explicitly confirms the license after reviewing
+- [x] Maintainer explicitly confirms the license after reviewing
   `docs/LICENSE_DECISION.md`; do not infer consent from the provisional file.
 - [ ] Review Apache-2.0 and all direct/transitive dependency licenses.
 - [ ] Tag the exact tested commit as `v0.1.0-beta.1`.

@@ -1,6 +1,6 @@
 # License decision record
 
-Status: **provisional until the first public release**.
+Status: **confirmed by the maintainer on 2026-08-18**.
 
 The repository currently uses Apache License 2.0 because the intended beta favors
 broad adoption by individuals, companies, and other Agent ecosystems while keeping
@@ -42,10 +42,9 @@ copyright notices and adding an express patent grant.
   deterrent to closed hosted forks, but creates the most adoption and legal-review
   friction.
 
-Before publishing, the maintainer must explicitly choose between broad adoption
-(Apache-2.0), file-level reciprocity (MPL-2.0), or strong/network reciprocity
-(GPL-3.0/AGPL-3.0). A public license grant for an already released version should be
-treated as irreversible for recipients of that version.
+The maintainer chose broad adoption under Apache-2.0. A public license grant for an
+already released version should be treated as irreversible for recipients of that
+version.
 
 This record explains project intent; the actual `LICENSE` text controls and this is
 not legal advice.

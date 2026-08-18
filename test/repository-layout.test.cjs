@@ -11,7 +11,7 @@ test('repository is a public single-engine package', () => {
   assert.equal(pkg.license, 'Apache-2.0');
   assert.equal(pkg.engines.node, '>=20');
   assert.equal(pkg.dependencies.playwright, '1.62.1');
-  assert.equal(pkg.dependencies.yaml, '2.8.1');
+  assert.equal(pkg.dependencies.yaml, '2.9.0');
   assert.equal(pkg.bin['site-style'], 'bin/site-style.cjs');
 
   assert.equal(fs.existsSync(path.join(root, 'src', 'capture-site.cjs')), true);
