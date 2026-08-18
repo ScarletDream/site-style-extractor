@@ -21,10 +21,7 @@ jobs:
           registry-url: https://registry.npmjs.org
       - run: npm ci
       - run: npm audit --omit=dev --audit-level=moderate
-      - run: npx playwright install --with-deps chromium
-        if: runner.os == 'Linux'
       - run: npx playwright install chromium
-        if: runner.os != 'Linux'
       - run: npm test
       - run: npm pack --dry-run
   docker:
