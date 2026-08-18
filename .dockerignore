@@ -1,0 +1,7 @@
+.git
+.github
+.scaffold
+node_modules
+test
+*.tgz
+site-style-*

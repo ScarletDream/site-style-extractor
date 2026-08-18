@@ -1,0 +1,10 @@
+node_modules/
+output/
+results/
+.staging/
+*.tgz
+.DS_Store
+Thumbs.db
+playwright-report/
+test-results/
+.scaffold/

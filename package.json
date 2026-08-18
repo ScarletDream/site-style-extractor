@@ -1,0 +1,33 @@
+{
+  "name": "site-style-extractor",
+  "version": "0.1.0-beta.1",
+  "description": "Evidence-backed UI style extraction from public websites.",
+  "license": "Apache-2.0",
+  "author": "Dorim",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "site-style": "bin/site-style.cjs"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "skills/",
+    "examples/",
+    ".codex-plugin/",
+    "README.md",
+    "SECURITY.md",
+    "LICENSE"
+  ],
+  "dependencies": {
+    "playwright": "1.62.1",
+    "yaml": "2.8.1"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.cjs",
+    "test:fixture": "node --test test/synthetic-fixture.test.cjs",
+    "check": "node --check bin/site-style.cjs"
+  }
+}

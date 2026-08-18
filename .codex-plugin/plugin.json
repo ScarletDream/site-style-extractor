@@ -1,0 +1,20 @@
+{
+  "name": "site-style-extractor",
+  "version": "0.1.0-beta.1",
+  "description": "Evidence-backed UI style extraction from public websites.",
+  "author": {
+    "name": "Dorim"
+  },
+  "license": "Apache-2.0",
+  "keywords": ["ui", "design", "website", "playwright", "evidence"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Site Style Extractor",
+    "shortDescription": "Extract portable UI language from a public website",
+    "longDescription": "Captures bounded rendered evidence, selects representative states, maps public frontend clues, and produces a validated portable UI style package.",
+    "developerName": "Dorim",
+    "category": "Developer Tools",
+    "capabilities": ["Public web capture", "UI analysis", "Evidence validation"],
+    "defaultPrompt": "Extract the portable UI style of this public website and validate the evidence package."
+  }
+}
