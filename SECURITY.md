@@ -21,4 +21,10 @@ Docker is an installation boundary, not a security boundary. Do not mount creden
 
 ## Reporting a vulnerability
 
-Do not publish a working exploit in a public issue. Report the affected version, reproducible input, observed impact, and a minimal sanitized artifact to the repository maintainer through a private channel once one is published. Until a public security contact exists, keep the report local and do not share secrets.
+Do not publish a working exploit in a public issue. Once the public GitHub
+repository enables Private Vulnerability Reporting, use its **Security → Report a
+vulnerability** form. Include the affected version, reproducible input, observed
+impact, and a minimal sanitized artifact.
+
+Before that private channel is enabled, this beta is not ready for public release.
+Do not send secrets through a public issue or commit them to a reproduction.

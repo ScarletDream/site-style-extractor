@@ -1,0 +1,24 @@
+name: Feature request
+description: Propose a bounded improvement to capture, synthesis, or validation
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What concrete failure or limitation does this address?
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence or synthetic example
+      description: Do not attach confidential or unauthorized third-party captures.
+  - type: textarea
+    id: boundary
+    attributes:
+      label: Proposed boundary
+      description: Explain time, interaction, network, and failure-state limits.
+    validations:
+      required: true

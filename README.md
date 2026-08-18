@@ -100,6 +100,17 @@ npm pack --dry-run
 
 Public regression tests use local synthetic fixtures. Real websites are non-blocking smoke tests because CDN failures, rate limits, and live redesigns are external state.
 
+Before contributing or publishing a release, read [CONTRIBUTING.md](CONTRIBUTING.md),
+[SECURITY.md](SECURITY.md), and [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md).
+
 ## License
 
 Apache-2.0. This license covers this project's code and documentation, not third-party websites, screenshots, fonts, brands, or assets observed by a user-run capture.
+
+In practical terms, Apache-2.0 permits private, commercial, modified, and
+redistributed use. Distributors must preserve the license and relevant notices,
+mark modified files, and may not use contributor trademarks as an endorsement.
+Contributors also provide an express patent grant, with termination for a party
+that starts certain patent litigation over the covered work. See [LICENSE](LICENSE)
+for the controlling text and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for
+direct runtime dependencies.

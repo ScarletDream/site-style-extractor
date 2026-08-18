@@ -19,6 +19,8 @@
     ".codex-plugin/",
     "README.md",
     "SECURITY.md",
+    "CHANGELOG.md",
+    "THIRD_PARTY_NOTICES.md",
     "LICENSE"
   ],
   "dependencies": {
