@@ -53,6 +53,8 @@ Interaction safety is best-effort, not a browser sandbox: a badly designed `GET`
 
 CLI exit codes are `0` for a complete artifact, `1` for an unhandled execution error, `2` for invalid CLI usage, and `3` when a truthful `partial` or `blocked` artifact was written. Scan directories are retained for re-selection and audit; delete or archive them only after the final package passes validation.
 
+Each scan has one 240-second in-process deadline in addition to the per-stage bounds. For a known slow public page, the Agent may explicitly pass `--timeout-ms` from 1000 to 900000; do not auto-extend a deadline after expiry. A deadline produces an atomic `blocked` artifact with the active stage and cannot be finalized. This closes Playwright best-effort but is not an operating-system resource sandbox.
+
 The collector requires Node.js 20+ plus Playwright. It blocks loopback, link-local, private, and many non-global destinations as best-effort risk reduction; this is not a complete network sandbox. `allowPrivateNetwork: true` is for controlled fixtures only.
 
 Readiness is bounded:

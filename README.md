@@ -35,6 +35,8 @@ node bin/site-style.cjs doctor --json
 ```bash
 site-style doctor
 site-style scan https://example.com --run work/example-scan
+# 慢站点可显式提高，但最多 15 分钟：
+site-style scan https://example.com --run work/example-scan --timeout-ms 480000
 site-style interact https://example.com --run work/example-scan --selection work/example-scan/selection.json
 site-style finalize --run work/example-scan --selection work/example-scan/selection.json --out output/example-style
 site-style render --profile output/example-style/style-profile.yaml --analysis output/example-style/analysis.md
@@ -70,7 +72,7 @@ site-style validate delivery output/example-style
 
 采集器不会把加载器、浏览器错误页、空白画布或低信息过渡帧当成目标设计的证据。`sparse-graphical-shell` 的含义是“当前画面不足以支持风格结论”，不武断断言所有无文字极简 splash 都是加载器。来自失败画面的 DOM/CSS 线索也会明确标成推断，而不是已观察事实。
 
-遍历、DOM/CSS 采样、稳定等待、截图、诊断和交互候选都有上限。当前 Beta 尚未对整个浏览器进程提供操作系统级的总时长、内存和下载字节硬限制；面对不受信任的公开页面，应在一次性环境中配合外部超时和资源限制运行。
+遍历、DOM/CSS 采样、稳定等待、截图、诊断和交互候选都有上限。一次 `scan` 默认还有 240 秒进程内总时限，可用 `--timeout-ms` 在 1 秒至 15 分钟间显式调整；超时会关闭 Playwright，以逐文件原子替换写入 `blocked` manifest/evidence，并记录当时阶段。它不是操作系统级硬杀，也不限制内存和下载字节；面对不受信任的公开页面，仍应在一次性环境或 Docker 中配合外部资源限制运行。
 
 ## 渲染边界
 

@@ -4,6 +4,7 @@ const crypto = require('node:crypto');
 const dns = require('node:dns').promises;
 const fs = require('node:fs');
 const path = require('node:path');
+const { performance } = require('node:perf_hooks');
 
 const {
   assertPublicNetworkTarget,
@@ -31,13 +32,105 @@ const DEFAULT_VIEWPORTS = [
   { name: 'desktop', width: 1440, height: 900 },
   { name: 'narrow', width: 390, height: 844 },
 ];
+const DEFAULT_TOTAL_TIMEOUT_MS = 240000;
+const MAX_TOTAL_TIMEOUT_MS = 900000;
+
+class ScanDeadlineExceededError extends Error {
+  constructor(totalTimeoutMs) {
+    super(`scan deadline exceeded after ${totalTimeoutMs} ms`);
+    this.name = 'ScanDeadlineExceededError';
+    this.code = 'SCAN_DEADLINE_EXCEEDED';
+  }
+}
+
+class ScanDeadline {
+  constructor(totalTimeoutMs, onExpire = () => {}) {
+    this.totalTimeoutMs = totalTimeoutMs;
+    this.startedAt = new Date();
+    this.startedAtMonotonic = performance.now();
+    this.deadlineAt = new Date(this.startedAt.getTime() + totalTimeoutMs);
+    this.activeStage = 'initialization';
+    this.controller = new AbortController();
+    this.reason = null;
+    this.timer = setTimeout(() => {
+      this.expire(this.activeStage);
+      Promise.resolve(onExpire(this.reason)).catch(() => {});
+    }, totalTimeoutMs);
+  }
+
+  setStage(stage) {
+    this.activeStage = stage;
+  }
+
+  expire(stage = this.activeStage) {
+    if (this.reason) return this.reason;
+    this.activeStage = stage;
+    this.reason = new ScanDeadlineExceededError(this.totalTimeoutMs);
+    this.controller.abort(this.reason);
+    return this.reason;
+  }
+
+  throwIfExpired(stage = this.activeStage) {
+    this.setStage(stage);
+    if (this.reason || performance.now() - this.startedAtMonotonic >= this.totalTimeoutMs) {
+      throw this.expire(stage);
+    }
+  }
+
+  async race(operation, stage = this.activeStage) {
+    this.throwIfExpired(stage);
+    let abortListener;
+    const aborted = new Promise((resolve, reject) => {
+      abortListener = () => reject(this.reason || this.expire(stage));
+      this.controller.signal.addEventListener('abort', abortListener, { once: true });
+    });
+    try {
+      const running = typeof operation === 'function' ? Promise.resolve().then(operation) : Promise.resolve(operation);
+      return await Promise.race([running, aborted]);
+    } finally {
+      this.controller.signal.removeEventListener('abort', abortListener);
+    }
+  }
+
+  finish() {
+    clearTimeout(this.timer);
+  }
+
+  budget() {
+    return {
+      totalTimeoutMs: this.totalTimeoutMs,
+      startedAt: this.startedAt.toISOString(),
+      deadlineAt: this.deadlineAt.toISOString(),
+    };
+  }
+
+  elapsedMs() {
+    return Math.max(0, Math.round(performance.now() - this.startedAtMonotonic));
+  }
+}
+
+function isDeadlineExceeded(error, deadline) {
+  return error?.code === 'SCAN_DEADLINE_EXCEEDED' || deadline.controller.signal.aborted;
+}
+
+async function boundedCleanup(promises, timeoutMs = 1000) {
+  let timer;
+  try {
+    await Promise.race([
+      Promise.allSettled(promises),
+      new Promise((resolve) => { timer = setTimeout(resolve, timeoutMs); }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
 
 function sha256(value) {
   return crypto.createHash('sha256').update(value).digest('hex');
 }
 
 function atomicJson(filePath, value) {
-  const temporary = `${filePath}.${process.pid}.tmp`;
+  const temporary = `${filePath}.${process.pid}.${crypto.randomUUID()}.tmp`;
   fs.writeFileSync(temporary, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
   fs.renameSync(temporary, filePath);
 }
@@ -61,6 +154,14 @@ function validateViewports(viewports) {
     }
     return { name: viewport.name, width: viewport.width, height: viewport.height };
   });
+}
+
+function validateTotalTimeoutMs(value) {
+  const timeout = value === undefined ? DEFAULT_TOTAL_TIMEOUT_MS : value;
+  if (!Number.isInteger(timeout) || timeout < 1 || timeout > MAX_TOTAL_TIMEOUT_MS) {
+    throw new Error(`totalTimeoutMs must be an integer from 1 to ${MAX_TOTAL_TIMEOUT_MS}`);
+  }
+  return timeout;
 }
 
 async function renderProbeFromFrame(page, framePath, probePath) {
@@ -104,8 +205,8 @@ async function renderContactSheet(browser, outputDirectory, viewportName, candid
 }
 
 async function collectScan(options) {
+  const totalTimeoutMs = validateTotalTimeoutMs(options.totalTimeoutMs);
   const url = validatePublicUrl(options.url, { allowPrivateNetwork: options.allowPrivateNetwork === true });
-  await assertPublicNetworkTarget(url, { allowPrivateNetwork: options.allowPrivateNetwork === true }, options.networkResolver || dns.lookup);
   const viewports = validateViewports(options.viewports || DEFAULT_VIEWPORTS);
   const outputDirectory = path.resolve(options.outputDirectory || `site-style-scan-${Date.now()}`);
   if (fs.existsSync(outputDirectory) && fs.readdirSync(outputDirectory).length > 0) {
@@ -117,12 +218,27 @@ async function collectScan(options) {
   fs.mkdirSync(probesDirectory, { recursive: true });
   const scanId = crypto.randomUUID();
   const sourceUrl = scrubUrl(url);
+  let browser;
+  let probeContext;
+  const activeContexts = new Set();
+  let cleanupPromise;
+  const closeResources = () => {
+    if (cleanupPromise) return cleanupPromise;
+    const contexts = [...activeContexts];
+    cleanupPromise = boundedCleanup([
+      ...contexts.map((context) => context.close().catch(() => {})),
+      ...(browser ? [browser.close().catch(() => {})] : []),
+    ]);
+    return cleanupPromise;
+  };
+  const deadline = new ScanDeadline(totalTimeoutMs, closeResources);
   const manifest = {
     schemaVersion: SCAN_SCHEMA_VERSION,
     scanId,
     budgetPolicyVersion: BUDGET_POLICY_VERSION,
     capturedAt: new Date().toISOString(),
     sourceUrl,
+    runtimeBudget: deadline.budget(),
     scanStatus: { status: 'blocked', reasons: [] },
     viewports: {},
     candidates: [],
@@ -142,27 +258,54 @@ async function collectScan(options) {
   };
   const evidencePath = path.join(outputDirectory, 'scan-evidence.json');
   const manifestPath = path.join(outputDirectory, 'scan-manifest.json');
-  const persist = () => {
-    atomicJson(evidencePath, evidence);
+  const writeJson = options.atomicJsonWriter || atomicJson;
+  let terminalPersisted = false;
+  const persist = ({ terminal = false } = {}) => {
+    if (terminalPersisted) return;
+    writeJson(evidencePath, evidence);
     manifest.scanEvidence = { path: 'scan-evidence.json', sha256: sha256(fs.readFileSync(evidencePath)) };
-    atomicJson(manifestPath, manifest);
+    writeJson(manifestPath, manifest);
+    if (terminal) terminalPersisted = true;
   };
-  persist();
-  let browser;
-  let probeContext;
-  let currentStage = 'playwright-load';
-  try {
+  let initialPersisted = false;
+  let currentStage = 'network-policy';
+  const setStage = (stage) => {
+    currentStage = stage;
+    deadline.setStage(stage);
+  };
+  setStage(currentStage);
+  const runScan = async () => {
+    await deadline.race(
+      assertPublicNetworkTarget(
+        url,
+        { allowPrivateNetwork: options.allowPrivateNetwork === true },
+        options.networkResolver || dns.lookup,
+      ),
+      'network-policy',
+    );
+    setStage('playwright-load');
     const { chromium } = (options.playwrightLoader || loadPlaywright)();
-    currentStage = 'browser-launch';
-    browser = await chromium.launch(launchOptions());
+    setStage('browser-launch');
+    browser = await deadline.race(
+      chromium.launch(launchOptions()).then(async (launchedBrowser) => {
+        if (deadline.controller.signal.aborted) {
+          await boundedCleanup([launchedBrowser.close().catch(() => {})]);
+          throw deadline.reason;
+        }
+        return launchedBrowser;
+      }),
+      'browser-launch',
+    );
     evidence.runtimeProvenance.browser.version = browser.version();
     probeContext = await browser.newContext({ viewport: { width: 380, height: 1200 } });
+    activeContexts.add(probeContext);
     const probePage = await probeContext.newPage();
     const resources = new Map();
     const interactionKeys = new Set();
-    currentStage = 'viewport-scan';
+    setStage('viewport-scan');
     for (const viewport of viewports) {
       const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height }, deviceScaleFactor: 1, serviceWorkers: 'block' });
+      activeContexts.add(context);
       const requestPolicy = options.requestPolicy || createRequestPolicy({
         allowPrivateNetwork: options.allowPrivateNetwork === true,
         resolver: options.networkResolver || dns.lookup,
@@ -195,6 +338,7 @@ async function collectScan(options) {
           else if (!resources.has(id)) evidence.page.resourceInventoryTruncated = true;
         });
         const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: options.navigationTimeoutMs || 45000 });
+        deadline.throwIfExpired('viewport-scan');
         if (evidence.runtimeProvenance.webgl.status === 'unknown') {
           evidence.runtimeProvenance.webgl = await probeWebgl(page);
         }
@@ -204,6 +348,7 @@ async function collectScan(options) {
         if (evidence.page.status === null) evidence.page.status = response?.status() ?? null;
         evidence.page.mainPath.push({ action: 'open', viewport: viewport.name, url: scrubUrl(page.url()) });
         readiness = await probeReadiness(page, options.timing || {});
+        deadline.throwIfExpired('viewport-scan');
         if (response && response.status() >= 400) {
           readiness = {
             ...readiness,
@@ -221,6 +366,7 @@ async function collectScan(options) {
           const plannedY = queue.shift();
           await page.evaluate((y) => window.scrollTo(0, y), plannedY);
           const settled = await settlePage(page, options.timing || {});
+          deadline.throwIfExpired('viewport-scan');
           const scrollY = await page.evaluate(() => window.scrollY);
           const geometry = await page.evaluate(() => ({ documentHeight: document.documentElement.scrollHeight, viewportHeight: innerHeight }));
           const maximum = Math.max(0, geometry.documentHeight - geometry.viewportHeight);
@@ -228,8 +374,10 @@ async function collectScan(options) {
           const framePath = `.staging/frames/${id}.png`;
           const probePath = `probes/${id}.jpg`;
           await page.screenshot({ path: path.join(outputDirectory, framePath), type: 'png', fullPage: false });
+          deadline.throwIfExpired('viewport-scan');
           const frameSha256 = sha256(fs.readFileSync(path.join(outputDirectory, framePath)));
           await renderProbeFromFrame(probePage, path.join(outputDirectory, framePath), path.join(outputDirectory, probePath));
+          deadline.throwIfExpired('viewport-scan');
           manifest.candidates.push({
             id, viewport: viewport.name, ordinal, plannedScrollY: plannedY, scrollY,
             scrollRatio: maximum ? scrollY / maximum : 0,
@@ -289,17 +437,19 @@ async function collectScan(options) {
         };
         manifest.viewports[viewport.name] = { ...viewport, status: readiness.status, reasons: readiness.reasons || [] };
       } catch (error) {
+        if (isDeadlineExceeded(error, deadline)) throw deadline.reason || deadline.expire('viewport-scan');
         const reason = scrubText(error.message || String(error));
         for (const candidate of manifest.candidates.filter((item) => item.viewport === viewport.name)) candidate.readinessStatus = 'blocked';
         manifest.viewports[viewport.name] = { ...viewport, status: 'blocked', reasons: [reason] };
         evidence.page.viewports[viewport.name] = { profile: viewport, captureStatus: { status: 'blocked', reasons: [reason] } };
       } finally {
-        await context.close();
+        await boundedCleanup([context.close().catch(() => {})]);
+        activeContexts.delete(context);
       }
     }
     evidence.page.publicResources = [...resources.values()];
     manifest.scanStatus = aggregateScanStatus(manifest.viewports);
-    currentStage = 'contact-sheet';
+    setStage('contact-sheet');
     for (const viewportName of Object.keys(manifest.viewports)) {
       const candidates = manifest.candidates.filter((candidate) => candidate.viewport === viewportName);
       if (!candidates.length) {
@@ -307,31 +457,68 @@ async function collectScan(options) {
         continue;
       }
       try {
-        const sheet = await (options.contactSheetRenderer || renderContactSheet)(browser, outputDirectory, viewportName, candidates);
+        const sheet = await deadline.race(
+          (options.contactSheetRenderer || renderContactSheet)(browser, outputDirectory, viewportName, candidates),
+          'contact-sheet',
+        );
         const sheetPath = path.join(outputDirectory, sheet);
         manifest.contactSheets[viewportName] = {
           status: 'complete', path: sheet, sha256: sha256(fs.readFileSync(sheetPath)),
           candidateIds: candidates.map((candidate) => candidate.id),
         };
       } catch (error) {
+        if (isDeadlineExceeded(error, deadline)) throw deadline.reason || deadline.expire('contact-sheet');
         manifest.contactSheets[viewportName] = { status: 'blocked', reasons: [scrubText(error.message || String(error))] };
       }
     }
     manifest.scanStatus = aggregateScanStatus(manifest.viewports, manifest.contactSheets);
+    deadline.throwIfExpired('finalize-scan');
     assertScanManifestShape(manifest);
-    persist();
+    manifest.runtimeBudget.elapsedMs = deadline.elapsedMs();
+    persist({ terminal: true });
     return { outputDirectory, manifest, evidence };
-  } catch (error) {
-    manifest.scanStatus = { status: 'blocked', stage: currentStage, reasons: [scrubText(error.message || String(error))] };
-    manifest.artifactValid = false;
-    manifest.operationalFailure = { stage: currentStage, reasons: manifest.scanStatus.reasons };
+  };
+  try {
     persist();
-    error.siteStyleResult = { outputDirectory, manifest, evidence };
-    throw error;
+    initialPersisted = true;
+    return await deadline.race(runScan(), currentStage);
+  } catch (error) {
+    const deadlineFailure = isDeadlineExceeded(error, deadline);
+    const failure = deadlineFailure ? (deadline.reason || deadline.expire(currentStage)) : error;
+    const failureStage = deadlineFailure ? deadline.activeStage : currentStage;
+    manifest.scanStatus = { status: 'blocked', stage: failureStage, reasons: [scrubText(failure.message || String(failure))] };
+    manifest.artifactValid = false;
+    manifest.operationalFailure = {
+      stage: failureStage,
+      reasons: manifest.scanStatus.reasons,
+      ...(deadlineFailure ? { code: 'SCAN_DEADLINE_EXCEEDED' } : {}),
+    };
+    manifest.runtimeBudget.elapsedMs = deadline.elapsedMs();
+    let failurePersistError;
+    try {
+      persist({ terminal: true });
+    } catch (persistError) {
+      failurePersistError = persistError;
+      failure.persistError = persistError;
+    }
+    if (initialPersisted && !failurePersistError) {
+      failure.siteStyleResult = { outputDirectory, manifest, evidence };
+    }
+    throw failure;
   } finally {
-    if (probeContext) await probeContext.close().catch(() => {});
-    if (browser) await browser.close().catch(() => {});
+    deadline.finish();
+    await closeResources();
   }
 }
 
-module.exports = { assessVisualProgress, collectScan, renderContactSheet, renderProbeFromFrame, validateViewports, visibleTextFingerprint };
+module.exports = {
+  DEFAULT_TOTAL_TIMEOUT_MS,
+  MAX_TOTAL_TIMEOUT_MS,
+  assessVisualProgress,
+  collectScan,
+  renderContactSheet,
+  renderProbeFromFrame,
+  validateTotalTimeoutMs,
+  validateViewports,
+  visibleTextFingerprint,
+};

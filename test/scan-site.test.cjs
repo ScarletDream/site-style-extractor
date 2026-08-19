@@ -68,6 +68,99 @@ test('scan persists a blocked failure manifest when the browser runtime cannot l
   }
 });
 
+test('an initial persistence failure clears the deadline and preserves the original I/O error', { timeout: 3000 }, async () => {
+  const outputDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'site-style-scan-write-failure-'));
+  try {
+    const startedAt = Date.now();
+    await assert.rejects(collectScan({
+      url: 'https://example.com/',
+      outputDirectory,
+      totalTimeoutMs: 80,
+      atomicJsonWriter: () => { throw new Error('fixture write failure'); },
+    }), (error) => {
+      assert.match(error.message, /fixture write failure/);
+      assert.doesNotMatch(error.message, /deadline/i);
+      return true;
+    });
+    assert.ok(Date.now() - startedAt < 500);
+    await new Promise((resolve) => setTimeout(resolve, 150));
+  } finally {
+    fs.rmSync(outputDirectory, { recursive: true, force: true });
+  }
+});
+
+test('scan enforces one wall-clock deadline and persists the active stage', { timeout: 5000 }, async () => {
+  const outputDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'site-style-scan-deadline-'));
+  try {
+    const startedAt = Date.now();
+    await assert.rejects(collectScan({
+      url: 'https://example.com/',
+      outputDirectory,
+      totalTimeoutMs: 80,
+      networkResolver: async () => new Promise(() => {}),
+    }), /scan deadline exceeded after 80 ms/i);
+    assert.ok(Date.now() - startedAt < 1500, 'deadline should not wait for the unresolved operation');
+    const manifest = JSON.parse(fs.readFileSync(path.join(outputDirectory, 'scan-manifest.json'), 'utf8'));
+    assert.equal(manifest.scanStatus.status, 'blocked');
+    assert.equal(manifest.scanStatus.stage, 'network-policy');
+    assert.deepEqual(manifest.scanStatus.reasons, ['scan deadline exceeded after 80 ms']);
+    assert.equal(manifest.runtimeBudget.totalTimeoutMs, 80);
+    assert.equal(manifest.artifactValid, false);
+    assert.ok(manifest.runtimeBudget.elapsedMs >= 80);
+    assert.ok(fs.existsSync(path.join(outputDirectory, 'scan-evidence.json')));
+    assert.equal(fs.readdirSync(outputDirectory).some((name) => name.endsWith('.tmp')), false);
+  } finally {
+    fs.rmSync(outputDirectory, { recursive: true, force: true });
+  }
+});
+
+test('a late operation cannot overwrite a terminal deadline artifact', { timeout: 5000 }, async () => {
+  const outputDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'site-style-scan-late-write-'));
+  try {
+    await assert.rejects(collectScan({
+      url: 'https://example.com/',
+      outputDirectory,
+      totalTimeoutMs: 60,
+      networkResolver: async () => new Promise((resolve) => setTimeout(
+        () => resolve([{ address: '93.184.216.34', family: 4 }]),
+        180,
+      )),
+    }), /scan deadline exceeded/i);
+    const manifestPath = path.join(outputDirectory, 'scan-manifest.json');
+    const terminalBytes = fs.readFileSync(manifestPath, 'utf8');
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    assert.equal(fs.readFileSync(manifestPath, 'utf8'), terminalBytes);
+    assert.equal(JSON.parse(terminalBytes).scanStatus.status, 'blocked');
+  } finally {
+    fs.rmSync(outputDirectory, { recursive: true, force: true });
+  }
+});
+
+test('a browser that launches after the deadline is closed instead of leaked', { timeout: 5000 }, async () => {
+  const outputDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'site-style-scan-late-browser-'));
+  let closeCalls = 0;
+  const lateBrowser = { close: async () => { closeCalls += 1; } };
+  try {
+    await assert.rejects(collectScan({
+      url: 'https://example.com/',
+      outputDirectory,
+      totalTimeoutMs: 60,
+      networkResolver: async () => [{ address: '93.184.216.34', family: 4 }],
+      playwrightLoader: () => ({
+        chromium: {
+          launch: async () => new Promise((resolve) => setTimeout(() => resolve(lateBrowser), 180)),
+        },
+      }),
+    }), /scan deadline exceeded/i);
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    assert.equal(closeCalls, 1);
+    const manifest = JSON.parse(fs.readFileSync(path.join(outputDirectory, 'scan-manifest.json'), 'utf8'));
+    assert.equal(manifest.scanStatus.stage, 'browser-launch');
+  } finally {
+    fs.rmSync(outputDirectory, { recursive: true, force: true });
+  }
+});
+
 test('a stable HTTP error or anti-bot page cannot become complete style evidence', { timeout: 60000 }, async (t) => {
   const server = http.createServer((request, response) => {
     response.writeHead(403, { 'content-type': 'text/html' });
@@ -103,6 +196,28 @@ test('contact sheet failure preserves candidates and downgrades only scan status
   assert.equal(result.manifest.scanStatus.status, 'partial');
   assert.equal(result.manifest.contactSheets.desktop.status, 'blocked');
   assert.ok(result.manifest.candidates.length > 0);
+});
+
+test('a hanging contact-sheet renderer cannot swallow the global deadline', { timeout: 12000 }, async (t) => {
+  const server = http.createServer((request, response) => response.end('<main style="height:900px">ready</main>'));
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => server.close());
+  const outputDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'site-style-sheet-deadline-'));
+  t.after(() => fs.rmSync(outputDirectory, { recursive: true, force: true }));
+  await assert.rejects(collectScan({
+    url: `http://127.0.0.1:${server.address().port}/`,
+    outputDirectory,
+    allowPrivateNetwork: true,
+    viewports: [{ name: 'desktop', width: 800, height: 600 }],
+    totalTimeoutMs: 5000,
+    contactSheetRenderer: async () => new Promise(() => {}),
+    timing: { readinessTimeoutMs: 300, settleTimeoutMs: 80, maxTraversalPositions: 2 },
+  }), /scan deadline exceeded after 5000 ms/i);
+  const manifest = JSON.parse(fs.readFileSync(path.join(outputDirectory, 'scan-manifest.json'), 'utf8'));
+  assert.equal(manifest.scanStatus.status, 'blocked');
+  assert.equal(manifest.scanStatus.stage, 'contact-sheet');
+  assert.ok(manifest.candidates.length > 0);
+  assert.equal(manifest.artifactValid, false);
 });
 
 test('viewport names and dimensions are rejected before any candidate path is written', async () => {

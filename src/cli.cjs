@@ -11,7 +11,7 @@ const { runDoctor } = require('./doctor.cjs');
 
 const HELP = `Usage:
   site-style doctor [--json]
-  site-style scan <url> --run <directory> [--json]
+  site-style scan <url> --run <directory> [--timeout-ms <1000-900000>] [--json]
   site-style interact <url> --run <directory> --selection <selection.json> [--json]
   site-style finalize --run <directory> --selection <selection.json> --out <directory> [--json]
   site-style render --profile <style-profile.yaml> --analysis <analysis.md> [--json]
@@ -48,6 +48,18 @@ function requireFlag(flags, name) {
 function assertAllowedFlags(flags, allowed) {
   const unknown = Object.keys(flags).find((name) => !allowed.includes(name));
   if (unknown) throw new UsageError(`Unknown flag for this command: --${unknown}.`);
+}
+
+function optionalTimeoutMs(flags) {
+  if (flags['timeout-ms'] === undefined) return undefined;
+  if (!/^\d+$/.test(flags['timeout-ms'])) {
+    throw new UsageError('--timeout-ms must be a whole number from 1000 to 900000.');
+  }
+  const value = Number(flags['timeout-ms']);
+  if (!Number.isSafeInteger(value) || value < 1000 || value > 900000) {
+    throw new UsageError('--timeout-ms must be a whole number from 1000 to 900000.');
+  }
+  return value;
 }
 
 function statusExitCode(status) {
@@ -122,11 +134,12 @@ async function runCli(argv, io = { stdout: process.stdout, stderr: process.stder
       result = await dependencies.doctor({});
       code = result.status === 'complete' ? 0 : 1;
     } else if (command === 'scan') {
-      assertAllowedFlags(parsed.flags, ['run']);
+      assertAllowedFlags(parsed.flags, ['run', 'timeout-ms']);
       if (parsed.values.length !== 1) throw new UsageError('scan requires one public URL.');
       result = await dependencies.scan({
         url: parsed.values[0],
         outputDirectory: requireFlag(parsed.flags, 'run'),
+        totalTimeoutMs: optionalTimeoutMs(parsed.flags),
       });
       code = statusExitCode(result.manifest.scanStatus.status);
     } else if (command === 'interact') {
@@ -186,6 +199,7 @@ module.exports = {
   UsageError,
   captureStatusFromDirectory,
   defaultDependencies,
+  optionalTimeoutMs,
   parseArguments,
   runCli,
   statusExitCode,

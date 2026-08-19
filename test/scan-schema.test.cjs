@@ -70,6 +70,19 @@ test('accepts a manifest-bound selection with opening and lower-page viewport co
   assert.doesNotThrow(() => assertSelectionShape(selection(), manifest(), FILE_HASH));
 });
 
+test('validates runtime budget metadata when present', () => {
+  const source = manifest();
+  source.runtimeBudget = {
+    totalTimeoutMs: 240000,
+    startedAt: '2026-08-19T00:00:00.000Z',
+    deadlineAt: '2026-08-19T00:04:00.000Z',
+    elapsedMs: 1234,
+  };
+  assert.doesNotThrow(() => assertScanManifestShape(source));
+  source.runtimeBudget.deadlineAt = '2026-08-19T00:03:59.000Z';
+  assert.throws(() => assertScanManifestShape(source), /runtimeBudget/);
+});
+
 test('rejects duplicate, unknown, over-budget, and path-like candidate IDs', () => {
   const source = manifest();
   assert.throws(

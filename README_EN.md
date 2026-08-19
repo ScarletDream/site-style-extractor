@@ -31,6 +31,8 @@ On machines with multiple Node versions, invoke the supported Node executable ex
 ```bash
 site-style doctor
 site-style scan https://example.com --run work/example-scan
+# Slow sites may opt into a larger budget, up to 15 minutes:
+site-style scan https://example.com --run work/example-scan --timeout-ms 480000
 site-style interact https://example.com --run work/example-scan --selection work/example-scan/selection.json
 site-style finalize --run work/example-scan --selection work/example-scan/selection.json --out output/example-style
 site-style render --profile output/example-style/style-profile.yaml --analysis output/example-style/analysis.md
@@ -66,7 +68,7 @@ Internal candidates, probes, and contact sheets remain audit material. The final
 
 The collector never treats a loader, browser error page, blank canvas, or low-information transition as proof of the intended design. `sparse-graphical-shell` means that the current frame is insufficient evidence; it does not assert that every text-free minimalist splash is a loader. DOM/CSS clues from a failed visual capture remain explicitly inferred.
 
-Traversal, DOM/CSS sampling, settling, screenshots, diagnostics, and interaction targets are individually bounded. The beta does not yet enforce a hard operating-system wall-clock, memory, or network-byte ceiling for the entire browser process. For untrusted public pages, run it in a disposable environment with an external timeout and resource limits; a partial result is preferable to relaxing those limits.
+Traversal, DOM/CSS sampling, settling, screenshots, diagnostics, and interaction targets are individually bounded. Each `scan` also has a 240-second in-process deadline; `--timeout-ms` may explicitly set 1 second to 15 minutes. Expiry closes Playwright, writes the `blocked` manifest/evidence using per-file atomic replacement, and records the active stage. This is not an operating-system hard kill and it does not cap memory or downloaded bytes, so untrusted pages still belong in a disposable environment or Docker with external resource limits.
 
 ## Rendering limits
 

@@ -14,6 +14,17 @@ function assertScanManifestShape(manifest) {
   if (manifest.schemaVersion !== SCAN_SCHEMA_VERSION) fail(`unsupported schemaVersion ${manifest.schemaVersion || '<missing>'}`);
   if (typeof manifest.scanId !== 'string' || !manifest.scanId) fail('scanId is required');
   if (manifest.budgetPolicyVersion !== BUDGET_POLICY_VERSION) fail('unsupported budget policy');
+  if (manifest.runtimeBudget !== undefined) {
+    const budget = manifest.runtimeBudget;
+    const startedAt = Date.parse(budget?.startedAt || '');
+    const deadlineAt = Date.parse(budget?.deadlineAt || '');
+    if (!Number.isInteger(budget?.totalTimeoutMs) || budget.totalTimeoutMs < 1 || budget.totalTimeoutMs > 900000
+      || !Number.isFinite(startedAt) || !Number.isFinite(deadlineAt)
+      || deadlineAt - startedAt !== budget.totalTimeoutMs
+      || (budget.elapsedMs !== undefined && (!Number.isInteger(budget.elapsedMs) || budget.elapsedMs < 0))) {
+      fail('runtimeBudget is invalid');
+    }
+  }
   if (!manifest.sourceUrl || !FINGERPRINT.test(manifest.sourceUrl.urlFingerprint || '')) fail('source URL fingerprint is required');
   if (!manifest.scanStatus || !['complete', 'partial', 'blocked'].includes(manifest.scanStatus.status)) fail('scanStatus is invalid');
   if (!manifest.viewports || typeof manifest.viewports !== 'object') fail('viewports are required');

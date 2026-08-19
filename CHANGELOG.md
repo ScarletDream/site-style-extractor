@@ -9,6 +9,9 @@ All notable user-visible changes will be documented here. The format follows
 ### Added
 
 - Public-release governance, contribution, security, and issue templates.
+- One scan-wide 240-second in-process deadline with an explicit 1-second to
+  15-minute CLI override, bounded Playwright cleanup, terminal artifact
+  protection, and runtime-budget provenance.
 
 ### Changed
 

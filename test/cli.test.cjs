@@ -56,7 +56,7 @@ test('routes all six commands with parsed arguments', async () => {
 
   for (const argv of [
     ['doctor'],
-    ['scan', 'https://example.com', '--run', 'run'],
+    ['scan', 'https://example.com', '--run', 'run', '--timeout-ms', '120000'],
     ['interact', 'https://example.com', '--run', 'run', '--selection', 'selection.json'],
     ['finalize', '--run', 'run', '--selection', 'selection.json', '--out', 'out'],
     ['render', '--profile', 'profile.yaml', '--analysis', 'analysis.md'],
@@ -69,6 +69,7 @@ test('routes all six commands with parsed arguments', async () => {
   assert.deepEqual(calls.map(([name]) => name), ['doctor', 'scan', 'interact', 'finalize', 'render', 'validate']);
   assert.equal(calls[1][1].url, 'https://example.com');
   assert.equal(calls[1][1].outputDirectory, 'run');
+  assert.equal(calls[1][1].totalTimeoutMs, 120000);
   assert.deepEqual(calls[3][1], ['run', 'selection.json', 'out']);
   assert.deepEqual(calls[5][1], { stage: 'delivery', directory: 'out' });
 });
@@ -120,6 +121,19 @@ test('unknown flags fail as usage errors instead of being ignored', async () => 
   );
   assert.equal(code, 2);
   assert.match(capture.read().stderr, /Unknown flag.*--ruin/);
+});
+
+test('scan rejects invalid wall-clock timeout values as usage errors', async () => {
+  for (const value of ['nope', '999', '900001', '1.5']) {
+    const capture = memoryIo();
+    const code = await runCli(
+      ['scan', 'https://example.com', '--run', 'run', '--timeout-ms', value],
+      capture.io,
+      fakeDependencies(),
+    );
+    assert.equal(code, 2);
+    assert.match(capture.read().stderr, /timeout-ms/i);
+  }
 });
 
 test('scan reports an authoritative persisted blocked result as exit 3 instead of a generic crash', async () => {
