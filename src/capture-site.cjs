@@ -15,7 +15,7 @@ function assertSupportedNodeVersion(version = process.versions.node) {
   const major = Number.parseInt(String(version).split('.')[0], 10);
   if (!Number.isFinite(major) || major < 20) {
     throw new Error(
-      `Site Style Extractor requires Node.js 20 or newer; current version is ${version}. `
+      `StyleJuicer requires Node.js 20 or newer; current version is ${version}. `
       + 'Install or select a supported runtime, then run the command again.',
     );
   }

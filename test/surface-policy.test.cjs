@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
 
-const skillRoot = path.resolve(__dirname, '..', 'skills', 'site-style-extractor');
+const skillRoot = path.resolve(__dirname, '..', 'skills', 'stylejuicer');
 
 function read(relativePath) {
   return fs.readFileSync(path.join(skillRoot, relativePath), 'utf8');
@@ -70,8 +70,8 @@ test('documents the implemented Capture Synthesize Validate boundary without ove
   assert.match(skill, /Capture[^]*Synthesize[^]*Validate/i);
   assert.match(contract, /style-profile\.yaml[^.]+machine source of truth/i);
   assert.match(contract, /BEGIN GENERATED SOURCE-SPECIFIC DECISIONS/);
-  assert.match(contract, /site-style render/);
-  assert.match(contract, /site-style validate/);
+  assert.match(contract, /stylejuicer render/);
+  assert.match(contract, /stylejuicer validate/);
   assert.match(combined, /public mechanism clues/i);
   assert.match(combined, /narrow viewport/i);
   assert.doesNotMatch(combined, /mobile `390×844`/i);
@@ -87,7 +87,7 @@ test('documents staged scan selection as the default evidence path', () => {
 
   assert.match(combined, /contact sheet/i);
   assert.match(combined, /candidate ID/i);
-  assert.match(combined, /site-style finalize/i);
+  assert.match(combined, /stylejuicer finalize/i);
   assert.match(combined, /exact[^.]+staged[^.]+bytes/i);
   assert.match(combined, /two to six|2–6/i);
   assert.match(combined, /internal[^.]+not[^.]+user/i);

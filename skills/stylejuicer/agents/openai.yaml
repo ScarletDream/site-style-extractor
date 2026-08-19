@@ -1,0 +1,4 @@
+interface:
+  display_name: "StyleJuicer"
+  short_description: "Capture, synthesize, and validate a site's portable UI language"
+  default_prompt: "Use $stylejuicer to scan one public surface path, inspect internal contact sheets, select two to six candidate IDs that cover its distinct visual systems, promote the exact staged bytes, synthesize reusable design language and public mechanism clues, then validate the five-artifact package."

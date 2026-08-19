@@ -1,8 +1,12 @@
-# Site Style Extractor
+# StyleJuicer
 
 [简体中文](README.md) | **English**
 
-Give an Agent one public website URL and get an evidence-backed, portable UI design-language package rather than a pile of generic adjectives.
+**Turn a website into portable UI language.**
+
+Give Codex a designer's eye: hand it one public URL and it scrolls, captures, inspects browser-delivered frontend clues, and brings back the style without bringing back the site's identity.
+
+The output is an evidence-backed package that another Agent can use, not a pile of generic adjectives.
 
 The project combines three boundaries:
 
@@ -11,6 +15,16 @@ The project combines three boundaries:
 3. Deterministic finalization and validation verify hashes, statuses, references, and the five-artifact contract.
 
 It extracts style. It does not implement the user's product or copy the source site's brand assets and distinctive composition.
+
+## More than a screenshot and a prompt
+
+- It incrementally scans one bounded desktop and narrow path instead of judging only the opening frame.
+- An Agent selects two to six immutable candidate frames; it cannot silently substitute a prettier screenshot later.
+- Public mechanism clues must connect a visible effect to a selector, resource, and confidence label.
+- Incomplete evidence becomes a reviewable `partial` or `blocked` result instead of fabricated success.
+- StyleJuicer stops at the five-artifact package. A downstream Agent designs the user's actual product.
+
+In the release-gate evaluation, three unseen references were transferred into a clinical-operations workbench, a transit incident console, and a community inventory product. All three passed package validation, responsive recomposition, state coverage, and runtime checks. That demonstrates bounded cross-product transfer, not universal one-click cloning.
 
 ## Requirements
 
@@ -21,7 +35,7 @@ It extracts style. It does not implement the user's product or copy the source s
 ```bash
 npm install
 node node_modules/playwright/cli.js install chromium
-node bin/site-style.cjs doctor --json
+node bin/stylejuicer.cjs doctor --json
 ```
 
 On machines with multiple Node versions, invoke the supported Node executable explicitly. `doctor` reports the selected Node, Playwright, Chromium, OS, architecture, headless mode, and output writeability.
@@ -29,14 +43,14 @@ On machines with multiple Node versions, invoke the supported Node executable ex
 ## CLI
 
 ```bash
-site-style doctor
-site-style scan https://example.com --run work/example-scan
+stylejuicer doctor
+stylejuicer scan https://example.com --run work/example-scan
 # Slow sites may opt into a larger budget, up to 15 minutes:
-site-style scan https://example.com --run work/example-scan --timeout-ms 480000
-site-style interact https://example.com --run work/example-scan --selection work/example-scan/selection.json
-site-style finalize --run work/example-scan --selection work/example-scan/selection.json --out output/example-style
-site-style render --profile output/example-style/style-profile.yaml --analysis output/example-style/analysis.md
-site-style validate delivery output/example-style
+stylejuicer scan https://example.com --run work/example-scan --timeout-ms 480000
+stylejuicer interact https://example.com --run work/example-scan --selection work/example-scan/selection.json
+stylejuicer finalize --run work/example-scan --selection work/example-scan/selection.json --out output/example-style
+stylejuicer render --profile output/example-style/style-profile.yaml --analysis output/example-style/analysis.md
+stylejuicer validate delivery output/example-style
 ```
 
 Every command supports `--json`. Machine results go to stdout and diagnostics go to stderr.
@@ -76,18 +90,18 @@ This tool does not promise pixel-equivalent reproduction. WebGL, Canvas, video, 
 
 ## Codex Plugin
 
-The repository contains a Plugin Skill under `skills/site-style-extractor`. The Skill provides Agent orchestration and analysis rules; the npm CLI provides deterministic execution. Plugin installation does not necessarily install npm or Chromium automatically, so run `site-style doctor` before capture.
+The repository contains a Plugin Skill under `skills/stylejuicer`. The Skill provides Agent orchestration and analysis rules; the npm CLI provides deterministic execution. Plugin installation does not necessarily install npm or Chromium automatically, so run `stylejuicer doctor` before capture.
 
-The Plugin is the reasoning/orchestration layer, not a second copy of the browser engine. Install the npm package (or use this repository checkout) and its pinned Chromium separately. Until the package is published to a registry, run the CLI as `node bin/site-style.cjs ...` from this checkout.
+The Plugin is the reasoning/orchestration layer, not a second copy of the browser engine. Install the npm package (or use this repository checkout) and its pinned Chromium separately. Until the package is published to a registry, run the CLI as `node bin/stylejuicer.cjs ...` from this checkout. The legacy `site-style` command remains a Beta compatibility alias to the same entry point; it is not a second engine.
 
 ## Docker
 
 The Docker image exposes the same CLI and pins the matching Playwright image. It is experimental until the repository's Linux Docker build-and-doctor CI has passed on the published commit:
 
 ```bash
-docker build -t site-style-extractor:0.1.0-beta.1 .
-docker run --rm site-style-extractor:0.1.0-beta.1 doctor --json
-docker run --rm --init --memory=2g --cpus=2 -v "$PWD/work:/work" site-style-extractor:0.1.0-beta.1 \
+docker build -t stylejuicer:0.1.0-beta.2 .
+docker run --rm stylejuicer:0.1.0-beta.2 doctor --json
+docker run --rm --init --memory=2g --cpus=2 -v "$PWD/work:/work" stylejuicer:0.1.0-beta.2 \
   scan https://example.com --run /work/example-scan --json
 ```
 

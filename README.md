@@ -1,8 +1,12 @@
-# Site Style Extractor
+# StyleJuicer · 风格榨汁机
 
 **简体中文** | [English](README_EN.md)
 
-只给 Agent 一个公开网站 URL，得到一套有截图、有代码线索、有置信度标注、可以迁移的 UI 风格档案，而不是一堆“简洁、现代、高级”的空泛形容词。
+**把一个网站，榨成一套能迁移的 UI 风格。**
+
+我给 Codex 装了一双“设计师的眼睛”：丢给它一个公开网址，它自己滚、自己截、检查浏览器收到的公开前端线索，最后只带走风格，不抄走网站。
+
+你得到的是一套有截图、有代码线索、有置信度标注、可以继续交给 Agent 使用的 UI 风格档案，而不是一堆“简洁、现代、高级”的空泛形容词。
 
 这个项目只负责提取风格，不替用户设计产品，也不复制来源网站的品牌资产和标志性构图。
 
@@ -16,6 +20,16 @@
 
 机械脚本负责“看见了什么、证据有没有被改过”；Agent 负责“这些证据意味着什么”。
 
+## 为什么不是又一个提示词
+
+- 不只看首屏：桌面和窄屏沿一条有界主线增量扫描，并识别空白壳、加载器和没有视觉进展的假成功。
+- 不让模型随口概括：Agent 只能从哈希绑定的候选帧中选择 2–6 张代表证据。
+- 不把资源列表冒充代码理解：公开机制线索必须关联到可见效果、selector、资源和置信度。
+- 不强行交作业：取证不完整就输出可复核的 `partial` / `blocked`，不会拿诊断帧编造完整风格。
+- 不负责抄站：StyleJuicer 到五件风格包为止，具体产品由下游 Agent 按用户需求设计。
+
+在发布门评测中，三个未见过的参考站分别被迁移为临床试验运营台、公交事件指挥台和社区食物库存产品；三组都通过五件包验证、双端重排、状态覆盖和运行检查。这证明的是有边界的跨产品迁移，不是“任意网站一键复刻”。
+
 ## 环境要求
 
 - Node.js 20 或更新版本
@@ -25,7 +39,7 @@
 ```bash
 npm install
 node node_modules/playwright/cli.js install chromium
-node bin/site-style.cjs doctor --json
+node bin/stylejuicer.cjs doctor --json
 ```
 
 如果机器上有多个 Node 版本，请明确使用受支持的 Node 可执行文件。`doctor` 会报告实际使用的 Node、Playwright、Chromium、操作系统、CPU 架构、无头模式和输出目录写入能力。
@@ -33,14 +47,14 @@ node bin/site-style.cjs doctor --json
 ## CLI
 
 ```bash
-site-style doctor
-site-style scan https://example.com --run work/example-scan
+stylejuicer doctor
+stylejuicer scan https://example.com --run work/example-scan
 # 慢站点可显式提高，但最多 15 分钟：
-site-style scan https://example.com --run work/example-scan --timeout-ms 480000
-site-style interact https://example.com --run work/example-scan --selection work/example-scan/selection.json
-site-style finalize --run work/example-scan --selection work/example-scan/selection.json --out output/example-style
-site-style render --profile output/example-style/style-profile.yaml --analysis output/example-style/analysis.md
-site-style validate delivery output/example-style
+stylejuicer scan https://example.com --run work/example-scan --timeout-ms 480000
+stylejuicer interact https://example.com --run work/example-scan --selection work/example-scan/selection.json
+stylejuicer finalize --run work/example-scan --selection work/example-scan/selection.json --out output/example-style
+stylejuicer render --profile output/example-style/style-profile.yaml --analysis output/example-style/analysis.md
+stylejuicer validate delivery output/example-style
 ```
 
 所有命令都支持 `--json`。机器结果写到 stdout，诊断信息写到 stderr。
@@ -82,18 +96,18 @@ Docker 能提高依赖一致性，但不能让这些表面与用户桌面完全�
 
 ## Codex Plugin
 
-仓库在 `skills/site-style-extractor` 中包含一个 Plugin Skill。Skill 提供 Agent 编排、视觉选择和语义分析规则；npm CLI 提供确定性的机械执行。Plugin 安装不一定会自动安装 npm 依赖和 Chromium，因此采集前必须运行 `site-style doctor`。
+仓库在 `skills/stylejuicer` 中包含一个 Plugin Skill。Skill 提供 Agent 编排、视觉选择和语义分析规则；npm CLI 提供确定性的机械执行。Plugin 安装不一定会自动安装 npm 依赖和 Chromium，因此采集前必须运行 `stylejuicer doctor`。
 
-它不是第二份浏览器引擎。npm 包尚未发布到 registry 时，请在仓库根目录使用 `node bin/site-style.cjs ...`。
+它不是第二份浏览器引擎。npm 包尚未发布到 registry 时，请在仓库根目录使用 `node bin/stylejuicer.cjs ...`。旧的 `site-style` 命令在 Beta 期间保留为同一入口的兼容别名，不包含第二套实现。
 
 ## Docker
 
 Docker 镜像暴露同一套 CLI，并固定配套 Playwright 镜像：
 
 ```bash
-docker build -t site-style-extractor:0.1.0-beta.1 .
-docker run --rm site-style-extractor:0.1.0-beta.1 doctor --json
-docker run --rm --init --memory=2g --cpus=2 -v "$PWD/work:/work" site-style-extractor:0.1.0-beta.1 \
+docker build -t stylejuicer:0.1.0-beta.2 .
+docker run --rm stylejuicer:0.1.0-beta.2 doctor --json
+docker run --rm --init --memory=2g --cpus=2 -v "$PWD/work:/work" stylejuicer:0.1.0-beta.2 \
   scan https://example.com --run /work/example-scan --json
 ```
 

@@ -10,12 +10,12 @@ const { validateCapturePackage, validateDeliveryPackage } = require('./validate-
 const { runDoctor } = require('./doctor.cjs');
 
 const HELP = `Usage:
-  site-style doctor [--json]
-  site-style scan <url> --run <directory> [--timeout-ms <1000-900000>] [--json]
-  site-style interact <url> --run <directory> --selection <selection.json> [--json]
-  site-style finalize --run <directory> --selection <selection.json> --out <directory> [--json]
-  site-style render --profile <style-profile.yaml> --analysis <analysis.md> [--json]
-  site-style validate <capture|delivery> <directory> [--json]
+  stylejuicer doctor [--json]
+  stylejuicer scan <url> --run <directory> [--timeout-ms <1000-900000>] [--json]
+  stylejuicer interact <url> --run <directory> --selection <selection.json> [--json]
+  stylejuicer finalize --run <directory> --selection <selection.json> --out <directory> [--json]
+  stylejuicer render --profile <style-profile.yaml> --analysis <analysis.md> [--json]
+  stylejuicer validate <capture|delivery> <directory> [--json]
 `;
 
 class UsageError extends Error {}

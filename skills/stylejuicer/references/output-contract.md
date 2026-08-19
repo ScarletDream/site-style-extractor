@@ -13,7 +13,7 @@ site-style-output/
 └── analysis.md
 ```
 
-The preferred capture path first creates a separate internal scan directory containing staged frames, frame-derived probes, hash-bound contact sheets, `scan-evidence.json`, `scan-manifest.json`, and `selection.json`. These files are provenance and Agent-selection aids; they are not a sixth delivery artifact and should not be shown to the user unless requested. `site-style finalize` promotes two to six exact staged frame bytes into a new or empty five-artifact directory after verifying IDs, hashes, coverage, budget, and filesystem containment. It builds transactionally and refuses a non-empty output directory.
+The preferred capture path first creates a separate internal scan directory containing staged frames, frame-derived probes, hash-bound contact sheets, `scan-evidence.json`, `scan-manifest.json`, and `selection.json`. These files are provenance and Agent-selection aids; they are not a sixth delivery artifact and should not be shown to the user unless requested. `stylejuicer finalize` promotes two to six exact staged frame bytes into a new or empty five-artifact directory after verifying IDs, hashes, coverage, budget, and filesystem containment. It builds transactionally and refuses a non-empty output directory.
 
 ## evidence.json
 
@@ -118,7 +118,7 @@ Include the generated source-specific decision table between these exact markers
 Create or refresh it with:
 
 ```powershell
-site-style render --profile style-profile.yaml --analysis analysis.md
+stylejuicer render --profile style-profile.yaml --analysis analysis.md
 ```
 
 Do not hand-edit the generated block. Narrative sections remain human/Agent-authored.
@@ -130,8 +130,8 @@ Keep it concise enough for another Agent to load without discarding the underlyi
 Run the structural gates from the Skill root:
 
 ```powershell
-site-style validate capture path/to/package
-site-style validate delivery path/to/package
+stylejuicer validate capture path/to/package
+stylejuicer validate delivery path/to/package
 ```
 
 The capture gate checks schema/status consistency, screenshot existence, and hashes. The delivery gate additionally checks all five artifacts, YAML parsing, decision shape, screenshot/resource references, diagnostic citation, and the generated Markdown block. These gates do not judge whether the style analysis is perceptive or useful; that remains semantic review.

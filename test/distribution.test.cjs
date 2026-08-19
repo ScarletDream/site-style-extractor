@@ -8,23 +8,23 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
 
 test('Codex Plugin manifest exposes exactly one Skill directory', () => {
   const manifest = JSON.parse(read('.codex-plugin/plugin.json'));
-  assert.equal(manifest.name, 'site-style-extractor');
-  assert.match(manifest.version, /^0\.1\.0-beta\.1$/);
+  assert.equal(manifest.name, 'stylejuicer');
+  assert.match(manifest.version, /^0\.1\.0-beta\.2$/);
   assert.equal(manifest.license, 'MIT');
   assert.equal(manifest.skills, './skills/');
   assert.equal(manifest.author.name, 'Dorim');
-  assert.equal(manifest.interface.displayName, 'Site Style Extractor');
+  assert.equal(manifest.interface.displayName, 'StyleJuicer');
   assert.equal(manifest.interface.category, 'Developer Tools');
   assert.equal('mcpServers' in manifest, false);
   assert.equal('apps' in manifest, false);
 });
 
 test('Skill delegates deterministic work to the unified CLI', () => {
-  const skillRoot = path.join(root, 'skills', 'site-style-extractor');
+  const skillRoot = path.join(root, 'skills', 'stylejuicer');
   const skill = fs.readFileSync(path.join(skillRoot, 'SKILL.md'), 'utf8');
-  assert.match(skill, /site-style doctor/);
+  assert.match(skill, /stylejuicer doctor/);
   for (const command of ['scan', 'interact', 'finalize', 'render', 'validate']) {
-    assert.match(skill, new RegExp(`site-style ${command}`));
+    assert.match(skill, new RegExp(`stylejuicer ${command}`));
   }
   assert.equal(fs.existsSync(path.join(skillRoot, 'scripts')), false);
   assert.doesNotMatch(skill, /codex-primary-runtime|node-v24\.19\.0-win-x64/i);

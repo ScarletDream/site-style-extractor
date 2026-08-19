@@ -1,9 +1,9 @@
 ---
-name: site-style-extractor
+name: stylejuicer
 description: Use when a user provides a public website URL and asks to extract, reverse-engineer, study, compare, or document its UI style, design language, rendered typography, responsive layout, interaction states, or publicly delivered frontend mechanisms.
 ---
 
-# Site Style Extractor
+# StyleJuicer
 
 Turn one public URL into an evidence-backed, portable design-language package. Extract the reference; do not implement the user's product.
 
@@ -36,18 +36,18 @@ Make five grouped decisions:
 Prefer an available isolated browser tool. The default reproducible path is:
 
 ```powershell
-site-style doctor
-site-style scan https://example.com --run work/example-scan
+stylejuicer doctor
+stylejuicer scan https://example.com --run work/example-scan
 # View the internal contact sheets, then write selection.json using candidate IDs only.
 # If selection.json chooses one discovered interactionCandidateId:
-site-style interact https://example.com --run work/example-scan --selection work/example-scan/selection.json
-site-style finalize --run work/example-scan --selection work/example-scan/selection.json --out output/example-style
-site-style validate capture output/example-style
+stylejuicer interact https://example.com --run work/example-scan --selection work/example-scan/selection.json
+stylejuicer finalize --run work/example-scan --selection work/example-scan/selection.json --out output/example-style
+stylejuicer validate capture output/example-style
 ```
 
 Candidates, probes, and contact sheets are internal audit material, not user-facing previews and not delivery evidence. Probes are derived from the already captured frame rather than recaptured from the live page. Finalization verifies the scan ID, URL fingerprint, manifest, contact-sheet and frame hashes, the six-image budget, viewport coverage, and real filesystem containment. It copies the exact selected staged bytes and never silently substitutes a nearby frame. Use only the unified `site-style` CLI; `src/` modules are internal engine APIs, not parallel command-line entry points.
 
-The scan may discover bounded safe tab or `aria-expanded` candidates but does not click them. It skips portal-style triggers whose controlled target does not exist at scan time. The Agent may select at most one `interactionCandidateId`; this reserves two of the six screenshot slots. `site-style interact` then reopens the same URL in an isolated browser context, verifies a unique target fingerprint plus page identity and geometry, captures before/after, and checks structural restoration. During replay it blocks non-`GET`/`HEAD` requests, popups, and post-load navigation. A missing, ambiguous, changed, no-op, or unrestorable target remains partial/blocked and is never promoted as successful interaction evidence.
+The scan may discover bounded safe tab or `aria-expanded` candidates but does not click them. It skips portal-style triggers whose controlled target does not exist at scan time. The Agent may select at most one `interactionCandidateId`; this reserves two of the six screenshot slots. `stylejuicer interact` then reopens the same URL in an isolated browser context, verifies a unique target fingerprint plus page identity and geometry, captures before/after, and checks structural restoration. During replay it blocks non-`GET`/`HEAD` requests, popups, and post-load navigation. A missing, ambiguous, changed, no-op, or unrestorable target remains partial/blocked and is never promoted as successful interaction evidence.
 
 Interaction safety is best-effort, not a browser sandbox: a badly designed `GET` request can still mutate server state. Run only on public unauthenticated pages in a fresh isolated profile; never use this workflow with a signed-in or personal browser context.
 
@@ -100,8 +100,8 @@ Create exactly the five artifacts defined by the output contract:
 `style-profile.yaml` is the interpretation-layer machine source of truth. Generate the decision table in `analysis.md` rather than maintaining a second handwritten copy:
 
 ```powershell
-site-style render --profile output/example-style/style-profile.yaml --analysis output/example-style/analysis.md
-site-style validate delivery output/example-style
+stylejuicer render --profile output/example-style/style-profile.yaml --analysis output/example-style/analysis.md
+stylejuicer validate delivery output/example-style
 ```
 
 Validation proves structural consistency only. Before delivery, also perform a semantic review: screenshots support the verdict; source-specific decisions pass the swap test; public mechanisms are not overstated; unknown motion, accessibility, authenticated, or destructive states remain unknown; and nothing proprietary was copied.

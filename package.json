@@ -1,23 +1,24 @@
 {
-  "name": "site-style-extractor",
-  "version": "0.1.0-beta.1",
-  "description": "Evidence-backed UI style extraction from public websites.",
+  "name": "stylejuicer",
+  "version": "0.1.0-beta.2",
+  "description": "Turn a public website into an evidence-backed, portable UI style package.",
   "license": "MIT",
   "author": "Dorim",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ScarletDream/site-style-extractor.git"
+    "url": "git+https://github.com/ScarletDream/stylejuicer.git"
   },
-  "homepage": "https://github.com/ScarletDream/site-style-extractor#readme",
+  "homepage": "https://github.com/ScarletDream/stylejuicer#readme",
   "bugs": {
-    "url": "https://github.com/ScarletDream/site-style-extractor/issues"
+    "url": "https://github.com/ScarletDream/stylejuicer/issues"
   },
   "type": "commonjs",
   "engines": {
     "node": ">=20"
   },
   "bin": {
-    "site-style": "bin/site-style.cjs"
+    "stylejuicer": "bin/stylejuicer.cjs",
+    "site-style": "bin/stylejuicer.cjs"
   },
   "files": [
     "bin/",
@@ -39,6 +40,6 @@
   "scripts": {
     "test": "node --test",
     "test:fixture": "node --test test/synthetic-fixture.test.cjs",
-    "check": "node --check bin/site-style.cjs"
+    "check": "node --check bin/stylejuicer.cjs"
   }
 }

@@ -10,10 +10,10 @@
 ## Cold installation
 
 - [ ] Restart Codex, open a new conversation, and verify that
-  `site-style-extractor` is discovered from the Plugin rather than a legacy user
+  `stylejuicer` is discovered from the Plugin rather than a legacy user
   Skill path.
 - [ ] On a clean machine or disposable user profile, install dependencies and the
-  paired Chromium, then run `site-style doctor --json`.
+  paired Chromium, then run `stylejuicer doctor --json`.
 - [ ] Run one complete synthetic capture through scan, finalize, render, and both
   validators without relying on the source checkout's `node_modules`.
 

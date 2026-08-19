@@ -6,6 +6,8 @@ All notable user-visible changes will be documented here. The format follows
 
 ## [Unreleased]
 
+## [0.1.0-beta.2] - 2026-08-20
+
 ### Added
 
 - Public-release governance, contribution, security, and issue templates.
@@ -15,6 +17,9 @@ All notable user-visible changes will be documented here. The format follows
 
 ### Changed
 
+- Rename the product, npm package, Codex Plugin, and Skill to StyleJuicer;
+  expose `stylejuicer` as the primary CLI while retaining `site-style` as a
+  temporary Beta compatibility alias.
 - Use MIT as the project license and make the complete Chinese README the
   default GitHub landing page, with a complete English counterpart.
 - Refine readiness around viewport-blocking loaders, sparse graphical shells,
@@ -34,5 +39,6 @@ All notable user-visible changes will be documented here. The format follows
 - Skills-only Codex Plugin wrapper, synthetic regression fixture, CI, and an
   experimental pinned Playwright Docker image.
 
-[Unreleased]: https://github.com/ScarletDream/site-style-extractor/compare/v0.1.0-beta.1...HEAD
-[0.1.0-beta.1]: https://github.com/ScarletDream/site-style-extractor/releases/tag/v0.1.0-beta.1
+[Unreleased]: https://github.com/ScarletDream/stylejuicer/compare/v0.1.0-beta.2...HEAD
+[0.1.0-beta.2]: https://github.com/ScarletDream/stylejuicer/compare/v0.1.0-beta.1...v0.1.0-beta.2
+[0.1.0-beta.1]: https://github.com/ScarletDream/stylejuicer/releases/tag/v0.1.0-beta.1

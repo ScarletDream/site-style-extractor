@@ -30,7 +30,7 @@ function fakeDependencies(overrides = {}) {
 test('help and usage errors use stable exit codes and streams', async () => {
   let capture = memoryIo();
   assert.equal(await runCli(['--help'], capture.io, fakeDependencies()), 0);
-  assert.match(capture.read().stdout, /site-style doctor/);
+  assert.match(capture.read().stdout, /stylejuicer doctor/);
   assert.equal(capture.read().stderr, '');
 
   capture = memoryIo();

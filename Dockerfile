@@ -10,5 +10,5 @@ COPY examples ./examples
 COPY README.md README_EN.md SECURITY.md THIRD_PARTY_NOTICES.md LICENSE ./
 
 USER pwuser
-ENTRYPOINT ["node", "/app/bin/site-style.cjs"]
+ENTRYPOINT ["node", "/app/bin/stylejuicer.cjs"]
 CMD ["--help"]

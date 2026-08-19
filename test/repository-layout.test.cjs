@@ -12,10 +12,11 @@ test('repository is a public single-engine package', () => {
   assert.equal(pkg.engines.node, '>=20');
   assert.equal(pkg.dependencies.playwright, '1.62.1');
   assert.equal(pkg.dependencies.yaml, '2.9.0');
-  assert.equal(pkg.bin['site-style'], 'bin/site-style.cjs');
+  assert.equal(pkg.bin.stylejuicer, 'bin/stylejuicer.cjs');
+  assert.equal(pkg.bin['site-style'], 'bin/stylejuicer.cjs');
 
   assert.equal(fs.existsSync(path.join(root, 'src', 'capture-site.cjs')), true);
-  assert.equal(fs.existsSync(path.join(root, 'skills', 'site-style-extractor', 'scripts')), false);
+  assert.equal(fs.existsSync(path.join(root, 'skills', 'stylejuicer', 'scripts')), false);
   assert.equal(pkg.files.includes('node_modules/'), false);
 
   const license = fs.readFileSync(path.join(root, 'LICENSE'), 'utf8');

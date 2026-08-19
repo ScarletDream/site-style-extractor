@@ -1,6 +1,6 @@
 # Contributing
 
-Site Style Extractor separates deterministic browser evidence from Agent judgment.
+StyleJuicer separates deterministic browser evidence from Agent judgment.
 Changes should preserve that boundary: collectors record bounded facts and honest
 failure states; the Skill selects evidence and explains portable design rules.
 
@@ -12,13 +12,13 @@ pinned Playwright version.
 ```bash
 npm ci
 node node_modules/playwright/cli.js install chromium
-node bin/site-style.cjs doctor --json
+node bin/stylejuicer.cjs doctor --json
 npm test
 ```
 
 ## Pull requests
 
-- Keep the public command surface in `bin/site-style.cjs`; do not add parallel
+- Keep the public command surface in `bin/stylejuicer.cjs`; do not add parallel
   hidden CLIs under `src/`.
 - Add a regression test before changing capture, network, state, hashing, or
   validation behavior.
