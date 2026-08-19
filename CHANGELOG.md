@@ -14,6 +14,10 @@ All notable user-visible changes will be documented here. The format follows
 
 - Use MIT as the project license and make the complete Chinese README the
   default GitHub landing page, with a complete English counterpart.
+- Refine readiness around viewport-blocking loaders, sparse graphical shells,
+  and inline or offscreen loader markers.
+- Add cross-scroll visual-progress checks, concrete status reasons, and truthful
+  CLI propagation for persisted failures.
 
 ## [0.1.0-beta.1] - 2026-08-18
 

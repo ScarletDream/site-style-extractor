@@ -68,6 +68,25 @@ test('scan persists a blocked failure manifest when the browser runtime cannot l
   }
 });
 
+test('a stable HTTP error or anti-bot page cannot become complete style evidence', { timeout: 60000 }, async (t) => {
+  const server = http.createServer((request, response) => {
+    response.writeHead(403, { 'content-type': 'text/html' });
+    response.end('<main><h1>Performing security verification</h1><p>Please wait while this site verifies your browser.</p></main>');
+  });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => server.close());
+  const outputDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'site-style-http-error-'));
+  t.after(() => fs.rmSync(outputDirectory, { recursive: true, force: true }));
+  const result = await collectScan({
+    url: `http://127.0.0.1:${server.address().port}/`, outputDirectory, allowPrivateNetwork: true,
+    viewports: [{ name: 'desktop', width: 800, height: 600 }],
+    timing: { readinessTimeoutMs: 300, settleTimeoutMs: 100, maxTraversalPositions: 4 },
+  });
+  assert.equal(result.manifest.viewports.desktop.status, 'blocked');
+  assert.ok(result.manifest.viewports.desktop.reasons.includes('http-status-403'));
+  assert.ok(result.manifest.candidates.every((candidate) => candidate.readinessStatus === 'blocked'));
+});
+
 test('contact sheet failure preserves candidates and downgrades only scan status', { timeout: 60000 }, async (t) => {
   const server = http.createServer((request, response) => response.end('<main style="height:1400px">ready</main>'));
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
@@ -115,4 +134,45 @@ test('bounded traversal replans when lazy content expands document height', { ti
   assert.ok(candidates.some((candidate) => candidate.documentHeight > 6000));
   assert.ok(candidates.at(-1).scrollRatio >= 0.95);
   assert.ok(candidates.length <= 6);
+});
+
+test('downgrades a tall page when significant scrolling produces the same rendered frame', { timeout: 60000 }, async (t) => {
+  const html = `<!doctype html><style>
+    html,body{margin:0}.scroll-space{height:3200px}.gate{position:fixed;inset:0;background:#f7f4ee;
+    display:grid;place-items:center;font:700 48px Georgia}
+  </style><div class="scroll-space" aria-hidden="true"></div><main class="gate">A STATIC GATE</main>`;
+  const server = http.createServer((request, response) => response.end(html));
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => server.close());
+  const outputDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'site-style-no-progress-'));
+  t.after(() => fs.rmSync(outputDirectory, { recursive: true, force: true }));
+  const result = await collectScan({
+    url: `http://127.0.0.1:${server.address().port}/`, outputDirectory, allowPrivateNetwork: true,
+    viewports: [{ name: 'desktop', width: 800, height: 600 }],
+    timing: { readinessTimeoutMs: 300, settleTimeoutMs: 100, maxTraversalPositions: 5 },
+  });
+  assert.equal(result.manifest.viewports.desktop.status, 'partial');
+  assert.ok(result.manifest.viewports.desktop.reasons.includes('no-visual-progress-across-scroll'));
+  assert.ok(result.manifest.candidates.every((candidate) => candidate.readinessStatus === 'partial'));
+  assert.match(result.manifest.scanStatus.reasons.join(' '), /desktop: no-visual-progress-across-scroll/);
+});
+
+test('uses planned traversal to detect a repeated gate even when the page locks actual scroll', { timeout: 60000 }, async (t) => {
+  const html = `<!doctype html><style>
+    html,body{margin:0}.scroll-space{height:3200px}.gate{position:fixed;inset:0;background:#111;color:white;
+    display:grid;place-items:center;font:700 48px Georgia}
+  </style><div class="scroll-space" aria-hidden="true"></div><main class="gate">LOCKED GATE</main>
+  <script>addEventListener('scroll',()=>scrollTo(0,0))</script>`;
+  const server = http.createServer((request, response) => response.end(html));
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => server.close());
+  const outputDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'site-style-locked-progress-'));
+  t.after(() => fs.rmSync(outputDirectory, { recursive: true, force: true }));
+  const result = await collectScan({
+    url: `http://127.0.0.1:${server.address().port}/`, outputDirectory, allowPrivateNetwork: true,
+    viewports: [{ name: 'desktop', width: 800, height: 600 }],
+    timing: { readinessTimeoutMs: 300, settleTimeoutMs: 100, maxTraversalPositions: 5 },
+  });
+  assert.equal(result.manifest.viewports.desktop.status, 'partial');
+  assert.ok(result.manifest.viewports.desktop.reasons.includes('no-visual-progress-across-scroll'));
 });

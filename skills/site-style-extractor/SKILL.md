@@ -60,7 +60,7 @@ Readiness is bounded:
 - Wait for fonts, non-zero layout, loader disappearance, and stable geometry samples.
 - Incrementally traverse at most 16 positions per viewport and settle after scroll or safe interaction.
 - Sparse content, low opacity/contrast, missing media, or continuous motion are review signals, not automatic rejection.
-- Persistent loader or zero layout produces `partial`; retained screenshots are diagnostic and cannot support style claims.
+- A viewport-blocking loader, zero layout, or sparse graphical shell with insufficient style evidence produces `partial`; retained screenshots are diagnostic and cannot support style claims. A small inline or offscreen loader marker does not block substantive visible content.
 - Bound DOM, CSS, and state samples. Record unresolved Canvas, video, or infinite motion instead of waiting forever.
 - Scan at most 16 candidate positions per viewport. Candidate count is an internal indexing cost, not a user screenshot gallery.
 - Select two to six final evidence screenshots globally. Include the opening and lower-page coverage of each complete viewport, then spend remaining slots on distinct visual systems rather than redundant responsive duplicates.

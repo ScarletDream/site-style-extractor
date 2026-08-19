@@ -121,3 +121,35 @@ test('unknown flags fail as usage errors instead of being ignored', async () => 
   assert.equal(code, 2);
   assert.match(capture.read().stderr, /Unknown flag.*--ruin/);
 });
+
+test('scan reports an authoritative persisted blocked result as exit 3 instead of a generic crash', async () => {
+  const capture = memoryIo();
+  const error = new Error('schema follow-up failed');
+  error.siteStyleResult = {
+    manifest: { scanStatus: { status: 'blocked', stage: 'contact-sheet', reasons: ['desktop: screenshot timeout'] } },
+  };
+  const code = await runCli(
+    ['scan', 'https://example.com', '--run', 'run', '--json'],
+    capture.io,
+    fakeDependencies({ scan: async () => { throw error; } }),
+  );
+  assert.equal(code, 3);
+  assert.deepEqual(JSON.parse(capture.read().stdout), error.siteStyleResult);
+  assert.equal(capture.read().stderr, '');
+});
+
+test('plain-text scan failure includes the persisted reason', async () => {
+  const capture = memoryIo();
+  const error = new Error('follow-up failed');
+  error.siteStyleResult = {
+    manifest: { scanStatus: { status: 'blocked', reasons: ['desktop: screenshot timeout'] } },
+  };
+  const code = await runCli(
+    ['scan', 'https://example.com', '--run', 'run'],
+    capture.io,
+    fakeDependencies({ scan: async () => { throw error; } }),
+  );
+  assert.equal(code, 3);
+  assert.match(capture.read().stdout, /^blocked/m);
+  assert.match(capture.read().stderr, /desktop: screenshot timeout/);
+});

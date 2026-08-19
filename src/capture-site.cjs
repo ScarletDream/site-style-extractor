@@ -6,6 +6,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { SCHEMA_VERSION } = require('./package-schema.cjs');
 const { createRuntimeProvenance, probeWebgl } = require('./runtime-provenance.cjs');
+const { aggregateScanStatus } = require('./status-record.cjs');
 const {
   createRequestPolicy, resourceId, scrubText, scrubUrl,
 } = require('./url-policy.cjs');
@@ -161,9 +162,15 @@ async function samplePageState(page) {
       '[aria-busy="true"]', '[role="progressbar"]', '.loading', '.loader',
       '[class*="loading" i]', '[class*="loader" i]', '[id*="loading" i]', '[id*="loader" i]',
     ];
-    const loaderElements = [...document.querySelectorAll(loaderSelectors.join(','))].filter(visible);
+    const intersectsViewport = (element) => {
+      const rect = element.getBoundingClientRect();
+      return rect.bottom > 0 && rect.right > 0 && rect.top < innerHeight && rect.left < innerWidth;
+    };
+    const loaderElements = [...document.querySelectorAll(loaderSelectors.join(','))]
+      .filter((element) => visible(element) && intersectsViewport(element));
     const statusLoaders = [...document.querySelectorAll('[role="status"]')]
-      .filter((element) => visible(element) && /load|wait|载入|加载|请稍候/i.test(element.textContent || ''));
+      .filter((element) => visible(element) && intersectsViewport(element)
+        && /load|wait|载入|加载|请稍候/i.test(element.textContent || ''));
     const explicitLoaders = [...new Set([...loaderElements, ...statusLoaders])];
     const bodyRect = document.body?.getBoundingClientRect();
     const activeAnimations = document.getAnimations();
@@ -186,6 +193,55 @@ async function samplePageState(page) {
       sampledArea += area;
       if (effectiveOpacity < 0.65) lowOpacityArea += area;
     }
+    const viewportElements = elements.filter(intersectsViewport);
+    const viewportText = viewportElements
+      .filter((element) => element.children.length === 0)
+      .map((element) => (element.textContent || '').trim().replace(/\s+/g, ' '))
+      .filter(Boolean).join(' ').slice(0, 20000);
+    const substantiveSelector = 'main,section,article,nav,header,footer,form,table,[role="main"]';
+    const substantiveBlockCount = [...document.querySelectorAll(substantiveSelector)]
+      .filter((element) => visible(element) && intersectsViewport(element)).length;
+    const interactiveCount = [...document.querySelectorAll('a[href],button,input,select,textarea,[role="button"],[role="tab"]')]
+      .filter((element) => visible(element) && intersectsViewport(element)).length;
+    const centeredGraphicCount = [...document.querySelectorAll('svg,canvas,img,video,picture')]
+      .filter((element) => visible(element) && intersectsViewport(element))
+      .filter((element) => {
+        const rect = element.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        const areaRatio = (rect.width * rect.height) / viewportArea;
+        return centerX > innerWidth * 0.3 && centerX < innerWidth * 0.7
+          && centerY > innerHeight * 0.3 && centerY < innerHeight * 0.7
+          && areaRatio > 0.00005 && areaRatio < 0.55;
+      }).length;
+    let blockingLoaderCount = 0;
+    for (const element of explicitLoaders) {
+      const rect = element.getBoundingClientRect();
+      const width = Math.max(0, Math.min(rect.right, innerWidth) - Math.max(rect.left, 0));
+      const height = Math.max(0, Math.min(rect.bottom, innerHeight) - Math.max(rect.top, 0));
+      const areaRatio = (width * height) / viewportArea;
+      const style = getComputedStyle(element);
+      const positionedOverlay = ['fixed', 'sticky'].includes(style.position)
+        && areaRatio >= 0.08;
+      let overlayAncestor = element.parentElement;
+      let blockingAncestor = false;
+      while (overlayAncestor && overlayAncestor !== document.documentElement) {
+        const ancestorStyle = getComputedStyle(overlayAncestor);
+        if (['fixed', 'sticky'].includes(ancestorStyle.position)) {
+          const ancestorRect = overlayAncestor.getBoundingClientRect();
+          const ancestorWidth = Math.max(0, Math.min(ancestorRect.right, innerWidth) - Math.max(ancestorRect.left, 0));
+          const ancestorHeight = Math.max(0, Math.min(ancestorRect.bottom, innerHeight) - Math.max(ancestorRect.top, 0));
+          blockingAncestor = (ancestorWidth * ancestorHeight) / viewportArea >= 0.5;
+          break;
+        }
+        overlayAncestor = overlayAncestor.parentElement;
+      }
+      const lacksSubstantiveContent = viewportText.length < 80 && substantiveBlockCount <= 1
+        && interactiveCount <= 1;
+      if (areaRatio >= 0.18 || positionedOverlay || blockingAncestor || lacksSubstantiveContent) blockingLoaderCount += 1;
+    }
+    const sparseGraphicalShell = viewportText.length < 24
+      && substantiveBlockCount <= 1 && interactiveCount === 0 && centeredGraphicCount > 0;
     return {
       readyState: document.readyState,
       documentWidth: document.documentElement.scrollWidth,
@@ -196,7 +252,13 @@ async function samplePageState(page) {
       textLength: (document.body?.textContent || '').trim().length,
       mediaCount: document.querySelectorAll('img,svg,canvas,video,picture').length,
       explicitLoaderCount: explicitLoaders.length,
+      blockingLoaderCount,
       explicitLoaderText: explicitLoaders.slice(0, 5).map((element) => (element.textContent || '').trim().slice(0, 80)),
+      viewportTextLength: viewportText.length,
+      substantiveBlockCount,
+      interactiveCount,
+      centeredGraphicCount,
+      sparseGraphicalShell,
       activeAnimationCount: activeAnimations.filter((animation) => animation.playState === 'running').length,
       infiniteAnimationCount: activeAnimations.filter((animation) => {
         const iterations = animation.effect?.getTiming?.().iterations;
@@ -233,7 +295,8 @@ async function probeReadiness(page, overrides = {}) {
       latest.readyState === 'complete'
       && latest.bodyWidth > 0
       && latest.bodyHeight > 0
-      && latest.explicitLoaderCount === 0
+      && latest.blockingLoaderCount === 0
+      && !latest.sparseGraphicalShell
       && stableSamples >= 1
     ) break;
     if (Date.now() >= deadline) break;
@@ -242,11 +305,13 @@ async function probeReadiness(page, overrides = {}) {
 
   const hardReasons = [];
   if (latest.bodyWidth <= 0 || latest.bodyHeight <= 0) hardReasons.push('zero-body-layout');
-  if (latest.explicitLoaderCount > 0) hardReasons.push('persistent-explicit-loader');
+  if (latest.blockingLoaderCount > 0) hardReasons.push('persistent-explicit-loader');
+  if (latest.sparseGraphicalShell) hardReasons.push('sparse-graphical-shell');
   const softSignals = [];
   if (latest.visibleCount <= 3 || (latest.textLength < 80 && latest.mediaCount === 0)) softSignals.push('sparse-content');
   if (latest.lowOpacityRatio >= 0.45) softSignals.push('low-aggregate-opacity');
   if (latest.activeAnimationCount > 0) softSignals.push('active-motion');
+  if (latest.explicitLoaderCount > latest.blockingLoaderCount) softSignals.push('visible-loader-marker');
   return {
     status: hardReasons.length ? 'partial' : 'complete',
     attempts,
@@ -1155,13 +1220,13 @@ async function collectSite(options) {
         else if (page) await page.close().catch(() => {});
       }
     }
-    const viewportStatuses = Object.values(pageReport.viewports).map((viewport) => viewport.captureStatus.status);
+    const aggregate = aggregateScanStatus(Object.fromEntries(Object.entries(pageReport.viewports).map(
+      ([name, viewport]) => [name, viewport.captureStatus],
+    )));
     report.captureStatus = {
-      status: viewportStatuses.every((status) => status === 'complete')
-        ? 'complete'
-        : viewportStatuses.some((status) => status !== 'blocked') ? 'partial' : 'blocked',
+      status: aggregate.status,
       stage: 'complete',
-      reasons: viewportStatuses.filter((status) => status !== 'complete'),
+      reasons: aggregate.reasons,
     };
   } catch (error) {
     report.captureStatus = {

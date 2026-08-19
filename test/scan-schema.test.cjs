@@ -38,12 +38,12 @@ function manifest() {
       ['desktop-001', 'desktop', 1500, 1, 1],
       ['narrow-000', 'narrow', 0, 0, 0],
       ['narrow-001', 'narrow', 1556, 1, 1],
-    ].map(([id, viewport, scrollY, scrollRatio, ordinal]) => ({
+    ].map(([id, viewport, scrollY, scrollRatio, ordinal], index) => ({
       id, viewport, ordinal, scrollY, plannedScrollY: scrollY, scrollRatio,
       documentHeight: 2400, viewportHeight: viewport === 'desktop' ? 900 : 844,
-      framePath: `.staging/frames/${id}.png`, frameSha256: FILE_HASH,
+      framePath: `.staging/frames/${id}.png`, frameSha256: String(index + 1).repeat(64).slice(0, 64),
       probePath: `probes/${id}.jpg`, probeSha256: FILE_HASH,
-      probeSourceFrameSha256: FILE_HASH,
+      probeSourceFrameSha256: String(index + 1).repeat(64).slice(0, 64),
       readinessStatus: 'complete', settleStatus: 'complete', visibleTextHash: HASH,
     })),
   };
@@ -149,4 +149,28 @@ test('selection reserves two screenshot slots for one known interaction candidat
     interactionCandidateId: 'interaction-desktop-000',
   }), source, FILE_HASH), /2 to 4|unique/i);
   assert.throws(() => assertSelectionShape(selection({ interactionCandidateId: 'interaction-missing-000' }), source, FILE_HASH), /unknown interaction/i);
+});
+
+test('allows scroll snap to move actual positions backward while planned traversal remains monotonic', () => {
+  const source = manifest();
+  source.scanStatus.status = 'partial';
+  source.viewports.desktop.status = 'partial';
+  source.candidates.filter((candidate) => candidate.viewport === 'desktop')
+    .forEach((candidate) => { candidate.readinessStatus = 'partial'; });
+  source.candidates[1].scrollY = 0;
+  source.candidates[1].scrollRatio = 0;
+  assert.doesNotThrow(() => assertScanManifestShape(source));
+
+  source.candidates[1].plannedScrollY = -1;
+  assert.throws(() => assertScanManifestShape(source), /plannedScrollY.*monotonic/i);
+});
+
+test('selection rejects opening and lower-page evidence that are byte-identical', () => {
+  const source = manifest();
+  source.candidates[1].frameSha256 = source.candidates[0].frameSha256;
+  source.candidates[1].probeSourceFrameSha256 = source.candidates[0].frameSha256;
+  assert.throws(() => assertSelectionShape(selection(), source, FILE_HASH), /same rendered frame|identical/i);
+  source.candidates[1].frameSha256 = '9'.repeat(64);
+  source.candidates[1].probeSourceFrameSha256 = source.candidates[1].frameSha256;
+  assert.doesNotThrow(() => assertSelectionShape(selection(), source, FILE_HASH));
 });

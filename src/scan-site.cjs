@@ -25,6 +25,7 @@ const {
 } = require('./scan-schema.cjs');
 const { createRequestPolicy, resourceId, scrubText, scrubUrl } = require('./url-policy.cjs');
 const { createRuntimeProvenance, probeWebgl } = require('./runtime-provenance.cjs');
+const { aggregateScanStatus } = require('./status-record.cjs');
 
 const DEFAULT_VIEWPORTS = [
   { name: 'desktop', width: 1440, height: 900 },
@@ -39,6 +40,15 @@ function atomicJson(filePath, value) {
   const temporary = `${filePath}.${process.pid}.tmp`;
   fs.writeFileSync(temporary, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
   fs.renameSync(temporary, filePath);
+}
+
+function assessVisualProgress(candidates, viewportHeight) {
+  if (!Array.isArray(candidates) || candidates.length < 2) return null;
+  const scrollValues = candidates.map((candidate) => candidate.plannedScrollY);
+  const significantSpan = Math.max(...scrollValues) - Math.min(...scrollValues) >= viewportHeight * 0.5;
+  if (!significantSpan) return null;
+  return new Set(candidates.map((candidate) => candidate.frameSha256)).size === 1
+    ? 'no-visual-progress-across-scroll' : null;
 }
 
 function validateViewports(viewports) {
@@ -194,6 +204,13 @@ async function collectScan(options) {
         if (evidence.page.status === null) evidence.page.status = response?.status() ?? null;
         evidence.page.mainPath.push({ action: 'open', viewport: viewport.name, url: scrubUrl(page.url()) });
         readiness = await probeReadiness(page, options.timing || {});
+        if (response && response.status() >= 400) {
+          readiness = {
+            ...readiness,
+            status: 'blocked',
+            reasons: [...new Set([...(readiness.reasons || []), `http-status-${response.status()}`])],
+          };
+        }
         const initialGeometry = await page.evaluate(() => ({ documentHeight: document.documentElement.scrollHeight, viewportHeight: innerHeight }));
         const maxPositions = options.timing?.maxTraversalPositions || 16;
         let knownMaximum = Math.max(0, initialGeometry.documentHeight - initialGeometry.viewportHeight);
@@ -256,6 +273,12 @@ async function collectScan(options) {
           readiness = { ...readiness, status: 'partial', reasons: [...new Set([...(readiness.reasons || []), 'bounded traversal did not reach the current lower-page extent'])] };
           for (const candidate of manifest.candidates.filter((item) => item.viewport === viewport.name)) candidate.readinessStatus = 'partial';
         }
+        const viewportCandidates = manifest.candidates.filter((item) => item.viewport === viewport.name);
+        const progressReason = assessVisualProgress(viewportCandidates, viewport.height);
+        if (progressReason) {
+          readiness = { ...readiness, status: 'partial', reasons: [...new Set([...(readiness.reasons || []), progressReason])] };
+          for (const candidate of viewportCandidates) candidate.readinessStatus = 'partial';
+        }
         const rendered = scrubRenderedEvidenceUrls(await inspectRenderedPage(page));
         rendered.evidenceSummary = buildEvidenceSummary(rendered);
         evidence.page.viewports[viewport.name] = {
@@ -275,12 +298,7 @@ async function collectScan(options) {
       }
     }
     evidence.page.publicResources = [...resources.values()];
-    const statuses = Object.values(manifest.viewports).map((viewport) => viewport.status);
-    manifest.scanStatus = {
-      status: statuses.every((status) => status === 'complete') ? 'complete'
-        : statuses.every((status) => status === 'blocked') ? 'blocked' : 'partial',
-      reasons: statuses.filter((status) => status !== 'complete'),
-    };
+    manifest.scanStatus = aggregateScanStatus(manifest.viewports);
     currentStage = 'contact-sheet';
     for (const viewportName of Object.keys(manifest.viewports)) {
       const candidates = manifest.candidates.filter((candidate) => candidate.viewport === viewportName);
@@ -297,16 +315,18 @@ async function collectScan(options) {
         };
       } catch (error) {
         manifest.contactSheets[viewportName] = { status: 'blocked', reasons: [scrubText(error.message || String(error))] };
-        if (manifest.scanStatus.status === 'complete') manifest.scanStatus.status = 'partial';
-        manifest.scanStatus.reasons.push(`contact sheet failed for ${viewportName}`);
       }
     }
+    manifest.scanStatus = aggregateScanStatus(manifest.viewports, manifest.contactSheets);
     assertScanManifestShape(manifest);
     persist();
     return { outputDirectory, manifest, evidence };
   } catch (error) {
     manifest.scanStatus = { status: 'blocked', stage: currentStage, reasons: [scrubText(error.message || String(error))] };
+    manifest.artifactValid = false;
+    manifest.operationalFailure = { stage: currentStage, reasons: manifest.scanStatus.reasons };
     persist();
+    error.siteStyleResult = { outputDirectory, manifest, evidence };
     throw error;
   } finally {
     if (probeContext) await probeContext.close().catch(() => {});
@@ -314,4 +334,4 @@ async function collectScan(options) {
   }
 }
 
-module.exports = { collectScan, renderContactSheet, renderProbeFromFrame, validateViewports, visibleTextFingerprint };
+module.exports = { assessVisualProgress, collectScan, renderContactSheet, renderProbeFromFrame, validateViewports, visibleTextFingerprint };

@@ -3,6 +3,7 @@ const BUDGET_POLICY_VERSION = '1.0.0';
 const HASH = /^[a-f0-9]{64}$/;
 const FINGERPRINT = /^sha256:[a-f0-9]{64}$/;
 const CANDIDATE_ID = /^[a-z0-9][a-z0-9-]*$/;
+const { aggregateScanStatus } = require('./status-record.cjs');
 
 function fail(message) {
   throw new Error(`Invalid scan package: ${message}`);
@@ -67,7 +68,7 @@ function assertScanManifestShape(manifest) {
     }
     candidates.forEach((candidate, index) => {
       if (candidate.ordinal !== index) fail(`candidate ordinal is invalid for viewport ${name}`);
-      if (index && candidate.scrollY < candidates[index - 1].scrollY) fail(`candidate scrollY is not monotonic for viewport ${name}`);
+      if (index && candidate.plannedScrollY < candidates[index - 1].plannedScrollY) fail(`candidate plannedScrollY is not monotonic for viewport ${name}`);
     });
     const sheet = manifest.contactSheets[name];
     if (!sheet || !['complete', 'blocked'].includes(sheet.status)) fail(`contact sheet status is invalid for ${name}`);
@@ -82,14 +83,10 @@ function assertScanManifestShape(manifest) {
     }
     return viewport.status;
   });
-  const aggregate = statuses.every((status) => status === 'complete') ? 'complete'
-    : statuses.every((status) => status === 'blocked') ? 'blocked' : 'partial';
-  if (aggregate === 'blocked' && manifest.scanStatus.status !== 'blocked'
-    || aggregate === 'partial' && manifest.scanStatus.status === 'complete') {
-    fail(`scanStatus ${manifest.scanStatus.status} contradicts aggregate viewport status ${aggregate}`);
+  const aggregate = aggregateScanStatus(manifest.viewports, manifest.contactSheets);
+  if (manifest.scanStatus.status !== aggregate.status) {
+    fail(`scanStatus ${manifest.scanStatus.status} contradicts aggregate viewport/contact-sheet status ${aggregate.status}`);
   }
-  if (Object.values(manifest.contactSheets).some((sheet) => sheet.status === 'blocked')
-    && manifest.scanStatus.status === 'complete') fail('scanStatus complete contradicts blocked contact sheet');
   const interactionIds = new Set();
   for (const interaction of manifest.interactionCandidates || []) {
     if (!/^interaction-[a-z0-9][a-z0-9-]*-\d{3}$/.test(interaction?.id || '') || interactionIds.has(interaction.id)) {
@@ -153,6 +150,13 @@ function assertSelectionShape(selection, manifest, manifestSha256) {
     if (available.some((candidate) => candidate.scrollY > 0)
       && !chosen.some((candidate) => candidate.scrollY > 0)) {
       fail(`selection must include a lower-page candidate for ${viewportName}`);
+    }
+    if (chosen.length > 1) {
+      const planned = chosen.map((candidate) => candidate.plannedScrollY);
+      const significantSpan = Math.max(...planned) - Math.min(...planned) >= (chosen[0].viewportHeight || 1) * 0.5;
+      if (significantSpan && new Set(chosen.map((candidate) => candidate.frameSha256)).size === 1) {
+        fail(`selection for ${viewportName} reuses the same rendered frame across opening and lower-page evidence`);
+      }
     }
   }
   return selection;

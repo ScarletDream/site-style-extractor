@@ -292,6 +292,91 @@ test('classifies a persistent explicit loader as partial instead of successful s
   }
 });
 
+test('ignores hidden and offscreen loader markers when substantive viewport content is ready', async () => {
+  const html = `<!doctype html><style>
+    .offscreen-loader{position:absolute;top:2000px;width:20px;height:20px}
+  </style><div class="loading" hidden>Loading</div><div class="offscreen-loader" role="status">Loading</div>
+  <main><h1>Ready product system</h1><p>This viewport contains enough visible product content to be useful evidence.</p></main>`;
+  const outputDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'site-style-offscreen-loader-'));
+  try {
+    await withFixtureServer({ '/': html }, async (baseUrl) => {
+      const report = await collectSite({
+        url: `${baseUrl}/`, outputDirectory, allowPrivateNetwork: true,
+        viewports: [{ name: 'desktop', width: 800, height: 600 }],
+        timing: { readinessTimeoutMs: 240, readinessPollMs: 40, settleTimeoutMs: 100 },
+      });
+      assert.equal(report.pages[0].viewports.desktop.captureStatus.status, 'complete');
+    });
+  } finally {
+    fs.rmSync(outputDirectory, { recursive: true, force: true });
+  }
+});
+
+test('does not let a small in-content spinner block a substantive page', async () => {
+  const html = `<!doctype html><main><h1>Analytics workspace</h1>
+    <p>Live reports, decisions, workflows, and project history are available in this workspace.</p>
+    <button><span class="loader" role="status">Loading</span> Refresh report</button>
+  </main>`;
+  const outputDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'site-style-inline-spinner-'));
+  try {
+    await withFixtureServer({ '/': html }, async (baseUrl) => {
+      const report = await collectSite({
+        url: `${baseUrl}/`, outputDirectory, allowPrivateNetwork: true,
+        viewports: [{ name: 'desktop', width: 800, height: 600 }],
+        timing: { readinessTimeoutMs: 240, readinessPollMs: 40, settleTimeoutMs: 100 },
+      });
+      assert.equal(report.pages[0].viewports.desktop.captureStatus.status, 'complete');
+      assert.ok(report.pages[0].viewports.desktop.captureStatus.softSignals.includes('visible-loader-marker'));
+    });
+  } finally {
+    fs.rmSync(outputDirectory, { recursive: true, force: true });
+  }
+});
+
+test('treats a small spinner inside an unnamed full-screen overlay as blocking', async () => {
+  const html = `<!doctype html><main><h1>Rendered workspace behind overlay</h1>
+    <p>This text is already present but cannot be used while the loading veil covers the viewport.</p></main>
+    <div style="position:fixed;inset:0;background:white;display:grid;place-items:center">
+      <span class="loader" role="status">Loading</span>
+    </div>`;
+  const outputDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'site-style-overlay-spinner-'));
+  try {
+    await withFixtureServer({ '/': html }, async (baseUrl) => {
+      const report = await collectSite({
+        url: `${baseUrl}/`, outputDirectory, allowPrivateNetwork: true,
+        viewports: [{ name: 'desktop', width: 800, height: 600 }],
+        timing: { readinessTimeoutMs: 180, readinessPollMs: 40, settleTimeoutMs: 100 },
+      });
+      assert.equal(report.pages[0].viewports.desktop.captureStatus.status, 'partial');
+      assert.ok(report.pages[0].viewports.desktop.captureStatus.reasons.includes('persistent-explicit-loader'));
+    });
+  } finally {
+    fs.rmSync(outputDirectory, { recursive: true, force: true });
+  }
+});
+
+test('classifies a sparse centered graphical shell as partial without treating every SVG as a loader', async () => {
+  const shell = `<!doctype html><style>
+    html,body{margin:0;min-height:100%;background:#050505}
+    svg{position:fixed;left:50%;top:50%;width:28px;height:28px;transform:translate(-50%,-50%)}
+  </style><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="4" fill="white"/></svg>`;
+  const outputDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'site-style-graphical-shell-'));
+  try {
+    await withFixtureServer({ '/': shell }, async (baseUrl) => {
+      const report = await collectSite({
+        url: `${baseUrl}/`, outputDirectory, allowPrivateNetwork: true,
+        viewports: [{ name: 'desktop', width: 800, height: 600 }],
+        timing: { readinessTimeoutMs: 180, readinessPollMs: 40, settleTimeoutMs: 100 },
+      });
+      const status = report.pages[0].viewports.desktop.captureStatus;
+      assert.equal(status.status, 'partial');
+      assert.ok(status.reasons.includes('sparse-graphical-shell'));
+    });
+  } finally {
+    fs.rmSync(outputDirectory, { recursive: true, force: true });
+  }
+});
+
 test('persists a blocked schema-v2 report when Playwright loading fails after output creation', async () => {
   const outputDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'site-style-blocked-'));
   try {

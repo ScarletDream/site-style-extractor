@@ -168,6 +168,13 @@ async function runCli(argv, io = { stdout: process.stdout, stderr: process.stder
     writeResult(io, result, parsed.json);
     return code;
   } catch (error) {
+    if (error.siteStyleResult?.manifest?.scanStatus) {
+      writeResult(io, error.siteStyleResult, args.includes('--json'));
+      if (!args.includes('--json')) {
+        for (const reason of error.siteStyleResult.manifest.scanStatus.reasons || []) io.stderr.write(`${reason}\n`);
+      }
+      return statusExitCode(error.siteStyleResult.manifest.scanStatus.status);
+    }
     io.stderr.write(`${error.message || error}\n`);
     if (error instanceof UsageError) io.stderr.write(HELP);
     return error instanceof UsageError ? 2 : 1;

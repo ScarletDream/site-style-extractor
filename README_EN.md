@@ -64,7 +64,7 @@ Internal candidates, probes, and contact sheets remain audit material. The final
 
 `partial` is a usable but incomplete result, such as one viewport succeeding while another remains behind a loader. `blocked` means the requested evidence could not be safely obtained. They are valid recorded outcomes, not successful style extraction, and return exit code 3.
 
-The collector never treats a loader, browser error page, blank canvas, or low-information transition as proof of the intended design. DOM/CSS clues from a failed visual capture remain explicitly inferred.
+The collector never treats a loader, browser error page, blank canvas, or low-information transition as proof of the intended design. `sparse-graphical-shell` means that the current frame is insufficient evidence; it does not assert that every text-free minimalist splash is a loader. DOM/CSS clues from a failed visual capture remain explicitly inferred.
 
 Traversal, DOM/CSS sampling, settling, screenshots, diagnostics, and interaction targets are individually bounded. The beta does not yet enforce a hard operating-system wall-clock, memory, or network-byte ceiling for the entire browser process. For untrusted public pages, run it in a disposable environment with an external timeout and resource limits; a partial result is preferable to relaxing those limits.
 
