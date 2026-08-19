@@ -5,7 +5,7 @@ This file is the normative artifact and decision schema. `style-profile.yaml` is
 Create one output directory per extraction.
 
 ```text
-site-style-output/
+stylejuicer-output/
 ├── screenshots/
 ├── evidence.json
 ├── public-code-map.json

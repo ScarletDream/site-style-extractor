@@ -28,5 +28,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: docker build -t site-style-extractor:ci .
-      - run: docker run --rm site-style-extractor:ci doctor --json
+      - run: docker build -t stylejuicer:ci .
+      - run: docker run --rm stylejuicer:ci doctor --json

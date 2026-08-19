@@ -33,3 +33,17 @@ test('distribution metadata excludes generated and private evidence', () => {
   const files = fs.readdirSync(root);
   assert.equal(files.includes('screenshots'), false);
 });
+
+test('public repository surfaces use the StyleJuicer identity', () => {
+  const workflow = fs.readFileSync(path.join(root, '.github', 'workflows', 'ci.yml'), 'utf8');
+  const issueConfig = fs.readFileSync(path.join(root, '.github', 'ISSUE_TEMPLATE', 'config.yml'), 'utf8');
+  const pullRequestTemplate = fs.readFileSync(path.join(root, '.github', 'pull_request_template.md'), 'utf8');
+  const skill = fs.readFileSync(path.join(root, 'skills', 'stylejuicer', 'SKILL.md'), 'utf8');
+  const outputContract = fs.readFileSync(path.join(root, 'skills', 'stylejuicer', 'references', 'output-contract.md'), 'utf8');
+
+  assert.match(workflow, /docker build -t stylejuicer:ci/);
+  assert.match(issueConfig, /github\.com\/ScarletDream\/stylejuicer\/security\/advisories\/new/);
+  assert.match(pullRequestTemplate, /`stylejuicer doctor --json`/);
+  assert.match(skill, /unified `stylejuicer` CLI/);
+  assert.match(outputContract, /^stylejuicer-output\//m);
+});
