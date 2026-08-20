@@ -35,4 +35,12 @@ The Codex Plugin and npm/Chromium runtime are separate installation layers.
 - A real npm tarball installed into a disposable consumer project, followed by packaged `doctor`, synthetic scan/finalize/render, and capture/delivery validation.
 - Three medium-distance UI transfers scored 93, 96, and 92 under a precommitted rubric; see `docs/EVALUATION.md` for limitations.
 
-The exact release commit, CI run, tarball checksum, and Docker result will be added when the candidate is finalized.
+Release evidence:
+
+- Commit: `685adea6c65e4a6c9f7c6c907ecd7f746ac095e8`
+- GitHub Actions: run `32323481775`, including the OS/Node matrix, package smoke, and Docker `doctor`
+- npm: `stylejuicer@0.1.0-beta.2`, published publicly under the `beta` tag
+- npm tarball SHA-1: `f49987518521c14401ea8ea66e9bfaec0d4731e1`
+- Registry cold install: installed from `registry.npmjs.org`; packaged CLI `--help` and `doctor --json` passed with Playwright 1.62.1 and Chromium 151
+
+The GitHub prerelease is intentionally separate from npm publication and has not yet been created.
