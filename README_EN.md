@@ -24,16 +24,28 @@ It extracts style. It does not implement the user's product or copy the source s
 - Incomplete evidence becomes a reviewable `partial` or `blocked` result instead of fabricated success.
 - StyleJuicer stops at the five-artifact package. A downstream Agent designs the user's actual product.
 
-In the release-gate evaluation, three unseen references were transferred into a clinical-operations workbench, a transit incident console, and a community inventory product. All three passed package validation, responsive recomposition, state coverage, and runtime checks. That demonstrates bounded cross-product transfer, not universal one-click cloning.
+In the release-gate evaluation, three unseen references were transferred into a clinical-operations workbench, a transit incident console, and a community inventory product. All three passed package validation, responsive recomposition, state coverage, and runtime checks. That demonstrates bounded cross-product transfer, not universal one-click cloning. See [docs/EVALUATION.md](docs/EVALUATION.md) for the protocol, scores, and bias notes.
 
-## Requirements
+## Installation
 
 - Node.js 20 or newer.
 - npm.
 - The Chromium revision paired with Playwright 1.62.1.
 
+After the public beta is published, install the CLI and browser runtime separately:
+
 ```bash
-npm install
+npm install -g stylejuicer@beta
+npx --yes playwright@1.62.1 install chromium
+stylejuicer doctor --json
+```
+
+The Codex Plugin supplies Agent judgment and orchestration; it does not install the npm CLI or Chromium. Plugin discovery therefore does not prove that browser capture is ready. The real `doctor` launch is the authority.
+
+For development from a source checkout:
+
+```bash
+npm ci
 node node_modules/playwright/cli.js install chromium
 node bin/stylejuicer.cjs doctor --json
 ```
@@ -92,11 +104,11 @@ This tool does not promise pixel-equivalent reproduction. WebGL, Canvas, video, 
 
 The repository contains a Plugin Skill under `skills/stylejuicer`. The Skill provides Agent orchestration and analysis rules; the npm CLI provides deterministic execution. Plugin installation does not necessarily install npm or Chromium automatically, so run `stylejuicer doctor` before capture.
 
-The Plugin is the reasoning/orchestration layer, not a second copy of the browser engine. Install the npm package (or use this repository checkout) and its pinned Chromium separately. Until the package is published to a registry, run the CLI as `node bin/stylejuicer.cjs ...` from this checkout. The legacy `site-style` command remains a Beta compatibility alias to the same entry point; it is not a second engine.
+The Plugin is the reasoning/orchestration layer, not a second copy of the browser engine. Install the npm package (or use this repository checkout) and its pinned Chromium separately. When using an unpublished source checkout, run the CLI as `node bin/stylejuicer.cjs ...` from the repository root. The legacy `site-style` command remains a Beta compatibility alias to the same entry point; it is not a second engine.
 
 ## Docker
 
-The Docker image exposes the same CLI and pins the matching Playwright image. It is experimental until the repository's Linux Docker build-and-doctor CI has passed on the published commit:
+The Docker image exposes the same CLI and pins the matching Playwright image. Every release candidate must pass the Linux Docker build-and-doctor CI job; rendering still remains best-effort across machines:
 
 ```bash
 docker build -t stylejuicer:0.1.0-beta.2 .
@@ -114,9 +126,10 @@ On Linux, make the mounted output directory writable by the container user befor
 ```bash
 npm test
 npm pack --dry-run
+npm run release:smoke
 ```
 
-Public regression tests use local synthetic fixtures. Real websites are non-blocking smoke tests because CDN failures, rate limits, and live redesigns are external state.
+`release:smoke` creates a real npm tarball, installs it into a temporary consumer project, and runs the packaged synthetic fixture through scan, finalize, render, and both validators. It does not visit a third-party reference site. Public regression tests use local synthetic fixtures. Real websites are non-blocking smoke tests because CDN failures, rate limits, and live redesigns are external state.
 
 Before contributing or publishing a release, read [CONTRIBUTING.md](CONTRIBUTING.md),
 [SECURITY.md](SECURITY.md), and [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md).

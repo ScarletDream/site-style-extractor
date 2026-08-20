@@ -14,8 +14,18 @@ test('repository is a public single-engine package', () => {
   assert.equal(pkg.dependencies.yaml, '2.9.0');
   assert.equal(pkg.bin.stylejuicer, 'bin/stylejuicer.cjs');
   assert.equal(pkg.bin['site-style'], 'bin/stylejuicer.cjs');
+  assert.deepEqual(pkg.publishConfig, {
+    access: 'public', registry: 'https://registry.npmjs.org/',
+  });
+  const npmConfig = fs.readFileSync(path.join(root, '.npmrc'), 'utf8');
+  assert.match(npmConfig, /^registry=https:\/\/registry\.npmjs\.org\/$/m);
+  assert.match(npmConfig, /^tag=beta$/m);
+  assert.equal(pkg.scripts['release:smoke'], 'node scripts/rehearse-release.cjs');
+  assert.ok(pkg.files.includes('docs/EVALUATION.md'));
+  assert.ok(pkg.files.includes('scripts/rehearse-release.cjs'));
 
   assert.equal(fs.existsSync(path.join(root, 'src', 'capture-site.cjs')), true);
+  assert.equal(fs.existsSync(path.join(root, 'scripts', 'rehearse-release.cjs')), true);
   assert.equal(fs.existsSync(path.join(root, 'skills', 'stylejuicer', 'scripts')), false);
   assert.equal(pkg.files.includes('node_modules/'), false);
 

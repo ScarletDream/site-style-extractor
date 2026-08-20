@@ -10,6 +10,13 @@ All notable user-visible changes will be documented here. The format follows
 
 ### Added
 
+- Bounded Playwright scan, representative interaction replay, deterministic
+  finalization, rendering, validation, and runtime diagnosis commands.
+- Evidence package contract with screenshots, rendered evidence, public-code
+  map, portable style profile, and analysis.
+- Honest `complete`, `partial`, and `blocked` states with stable CLI exit codes.
+- Skills-only Codex Plugin wrapper, synthetic regression fixture, CI, and a
+  pinned Playwright Docker image.
 - Public-release governance, contribution, security, and issue templates.
 - One scan-wide 240-second in-process deadline with an explicit 1-second to
   15-minute CLI override, bounded Playwright cleanup, terminal artifact
@@ -27,18 +34,5 @@ All notable user-visible changes will be documented here. The format follows
 - Add cross-scroll visual-progress checks, concrete status reasons, and truthful
   CLI propagation for persisted failures.
 
-## [0.1.0-beta.1] - 2026-08-18
-
-### Added
-
-- Bounded Playwright scan, representative interaction replay, deterministic
-  finalization, rendering, validation, and runtime diagnosis commands.
-- Evidence package contract with screenshots, rendered evidence, public-code map,
-  portable style profile, and analysis.
-- Honest `complete`, `partial`, and `blocked` states with stable CLI exit codes.
-- Skills-only Codex Plugin wrapper, synthetic regression fixture, CI, and an
-  experimental pinned Playwright Docker image.
-
 [Unreleased]: https://github.com/ScarletDream/stylejuicer/compare/v0.1.0-beta.2...HEAD
-[0.1.0-beta.2]: https://github.com/ScarletDream/stylejuicer/compare/v0.1.0-beta.1...v0.1.0-beta.2
-[0.1.0-beta.1]: https://github.com/ScarletDream/stylejuicer/releases/tag/v0.1.0-beta.1
+[0.1.0-beta.2]: https://github.com/ScarletDream/stylejuicer/releases/tag/v0.1.0-beta.2

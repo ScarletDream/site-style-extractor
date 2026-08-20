@@ -28,16 +28,28 @@
 - 不强行交作业：取证不完整就输出可复核的 `partial` / `blocked`，不会拿诊断帧编造完整风格。
 - 不负责抄站：StyleJuicer 到五件风格包为止，具体产品由下游 Agent 按用户需求设计。
 
-在发布门评测中，三个未见过的参考站分别被迁移为临床试验运营台、公交事件指挥台和社区食物库存产品；三组都通过五件包验证、双端重排、状态覆盖和运行检查。这证明的是有边界的跨产品迁移，不是“任意网站一键复刻”。
+在发布门评测中，三个未见过的参考站分别被迁移为临床试验运营台、公交事件指挥台和社区食物库存产品；三组都通过五件包验证、双端重排、状态覆盖和运行检查。这证明的是有边界的跨产品迁移，不是“任意网站一键复刻”。协议、评分与偏差说明见 [docs/EVALUATION.md](docs/EVALUATION.md)。
 
-## 环境要求
+## 安装
 
 - Node.js 20 或更新版本
 - npm
 - 与 Playwright 1.62.1 配套的 Chromium
 
+公开 Beta 发布后，CLI 与浏览器运行时需要单独安装：
+
 ```bash
-npm install
+npm install -g stylejuicer@beta
+npx --yes playwright@1.62.1 install chromium
+stylejuicer doctor --json
+```
+
+Codex Plugin 提供 Agent 的判断与编排，不会替你安装 npm CLI 或 Chromium。也就是说，Plugin 能被 Codex 发现不等于浏览器采集环境已经就绪；以 `doctor` 的真实启动结果为准。
+
+从源码开发时使用：
+
+```bash
+npm ci
 node node_modules/playwright/cli.js install chromium
 node bin/stylejuicer.cjs doctor --json
 ```
@@ -98,7 +110,7 @@ Docker 能提高依赖一致性，但不能让这些表面与用户桌面完全�
 
 仓库在 `skills/stylejuicer` 中包含一个 Plugin Skill。Skill 提供 Agent 编排、视觉选择和语义分析规则；npm CLI 提供确定性的机械执行。Plugin 安装不一定会自动安装 npm 依赖和 Chromium，因此采集前必须运行 `stylejuicer doctor`。
 
-它不是第二份浏览器引擎。npm 包尚未发布到 registry 时，请在仓库根目录使用 `node bin/stylejuicer.cjs ...`。旧的 `site-style` 命令在 Beta 期间保留为同一入口的兼容别名，不包含第二套实现。
+它不是第二份浏览器引擎。使用未发布的源码检出时，请在仓库根目录运行 `node bin/stylejuicer.cjs ...`。旧的 `site-style` 命令在 Beta 期间保留为同一入口的兼容别名，不包含第二套实现。
 
 ## Docker
 
@@ -118,9 +130,10 @@ docker run --rm --init --memory=2g --cpus=2 -v "$PWD/work:/work" stylejuicer:0.1
 ```bash
 npm test
 npm pack --dry-run
+npm run release:smoke
 ```
 
-公开回归测试只使用本地合成网页。真实网站会受 CDN、限流和在线改版影响，因此只作为非阻断 smoke test。
+`release:smoke` 会真正生成 npm tarball，在临时消费者项目中安装它，使用安装包内的合成网页跑完 scan、finalize、render 和两道 validator；它不会访问第三方参考网站。公开回归测试只使用本地合成网页。真实网站会受 CDN、限流和在线改版影响，因此只作为非阻断 smoke test。
 
 参与贡献或准备发布前，请阅读 [CONTRIBUTING.md](CONTRIBUTING.md)、[SECURITY.md](SECURITY.md) 和 [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md)。
 

@@ -57,6 +57,16 @@ Each scan has one 240-second in-process deadline in addition to the per-stage bo
 
 The collector requires Node.js 20+ plus Playwright. It blocks loopback, link-local, private, and many non-global destinations as best-effort risk reduction; this is not a complete network sandbox. `allowPrivateNetwork: true` is for controlled fixtures only.
 
+The Plugin and mechanical runtime are separate installation layers. Before the first public capture, run `stylejuicer doctor`. If the command is missing or its paired Chromium is unavailable, explain the required public-Beta bootstrap rather than pretending the Plugin installed it:
+
+```bash
+npm install -g stylejuicer@beta
+npx --yes playwright@1.62.1 install chromium
+stylejuicer doctor --json
+```
+
+Installing packages changes the user's environment, so present these commands or execute them only within the user's authorization. Source-checkout development may instead use `node bin/stylejuicer.cjs` with that checkout's pinned dependencies.
+
 Readiness is bounded:
 
 - Wait for fonts, non-zero layout, loader disappearance, and stable geometry samples.

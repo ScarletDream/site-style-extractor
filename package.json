@@ -12,6 +12,10 @@
   "bugs": {
     "url": "https://github.com/ScarletDream/stylejuicer/issues"
   },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "type": "commonjs",
   "engines": {
     "node": ">=20"
@@ -25,6 +29,8 @@
     "src/",
     "skills/",
     "examples/",
+    "docs/EVALUATION.md",
+    "scripts/rehearse-release.cjs",
     ".codex-plugin/",
     "README.md",
     "README_EN.md",
@@ -40,6 +46,7 @@
   "scripts": {
     "test": "node --test",
     "test:fixture": "node --test test/synthetic-fixture.test.cjs",
-    "check": "node --check bin/stylejuicer.cjs"
+    "check": "node --check bin/stylejuicer.cjs",
+    "release:smoke": "node scripts/rehearse-release.cjs"
   }
 }
